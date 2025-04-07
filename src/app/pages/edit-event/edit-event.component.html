@@ -1,0 +1,604 @@
+<app-toaster></app-toaster>
+<div class="w-full h-full bg-gray-900 min-h-screen">
+  <div class="px-4 max-w-7xl mx-auto mt-6 text-gray-100">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-semibold text-white">Event Details</h2>
+      <button 
+        class="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600"
+        routerLink="/events"
+      >
+        Back to Events
+      </button>
+    </div>
+
+    <div *ngIf="isLoading" class="text-center my-6">
+      <div class="inline-block w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <div *ngIf="!isLoading" class="bg-gray-800 rounded-lg p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-semibold">{{ event.title }}</h3>
+        <button 
+          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          (click)="toggleEdit()"
+        >
+          {{ isEditing ? 'Cancel Editing' : 'Edit Event' }}
+        </button>
+      </div>
+
+      <!-- View Mode -->
+      <div *ngIf="!isEditing">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div>
+              <h4 class="text-gray-400 font-medium">Description</h4>
+              <p class="text-white">{{ event.description }}</p>
+            </div>
+            
+            <div>
+              <h4 class="text-gray-400 font-medium">Location</h4>
+              <p class="text-white">{{ event.location }}, {{ event.city }}, {{ event.state }}</p>
+            </div>
+            
+            <div>
+              <h4 class="text-gray-400 font-medium">Date</h4>
+              <div *ngIf="event.date.dateType === 'single'">
+                <p class="text-white">{{ event.date.date | date:'mediumDate' }}</p>
+              </div>
+              <div *ngIf="event.date.dateType === 'multiple'">
+                <p class="text-white">{{ event.date.date | date:'mediumDate' }} - {{ event.date.endDate | date:'mediumDate' }}</p>
+              </div>
+              <div *ngIf="event.date.dateType === 'recurring'">
+                <p class="text-white">Every {{ event.date.recurranceDay | titlecase }}</p>
+              </div>
+            </div>
+            
+            <div>
+              <h4 class="text-gray-400 font-medium">Time</h4>
+              <p class="text-white">
+                <span *ngFor="let time of event.startTime; let i = index">
+                  {{ time }} - {{ event.endTime[i] }}
+                  <span *ngIf="i < event.startTime.length - 1">, </span>
+                </span>
+              </p>
+            </div>
+            
+            <div>
+              <h4 class="text-gray-400 font-medium">Status</h4>
+              <span 
+                class="inline-block px-2 py-1 text-xs font-semibold rounded-full"
+                [ngClass]="{
+                  'bg-green-800 text-green-300': event.status === 'active',
+                  'bg-gray-700 text-gray-300': event.status !== 'active'
+                }"
+              >
+                {{ event.status | titlecase }}
+              </span>
+            </div>
+          </div>
+          
+          <!-- Image Gallery -->
+          <div>
+            <h4 class="text-gray-400 font-medium mb-4">Images</h4>
+            <div class="grid grid-cols-3 gap-2">
+              <div *ngFor="let image of event.image" class="relative">
+                <img [src]="image.url" class="w-full h-32 object-cover rounded">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tickets Section -->
+        <div class="mt-6">
+          <h4 class="text-gray-400 font-medium mb-4">Tickets</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div *ngFor="let ticket of event.tickets" class="p-3 bg-gray-700 rounded">
+              <p class="font-medium text-white">{{ ticket.title }}</p>
+              <p class="text-gray-300">Price: ₹{{ ticket.price }}</p>
+              <p class="text-gray-300">Seats: {{ ticket.seatsLeft===-1 ? "∞" : ticket.seats }}/{{ ticket.seats===-1 ? "∞" : ticket.seats }}</p>
+              <p *ngIf="ticket.description" class="text-gray-300 text-sm mt-2">{{ ticket.description }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Terms and Conditions -->
+        <div *ngIf="event.tnc && event.tnc.length > 0" class="mt-6">
+          <h4 class="text-gray-400 font-medium mb-4">Terms & Conditions</h4>
+          <div *ngFor="let term of event.tnc" class="mb-3">
+            <h5 class="font-medium text-white">{{ term.heading }}</h5>
+            <p class="text-gray-300 text-sm">{{ term.text }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Mode -->
+      <form *ngIf="isEditing" [formGroup]="eventForm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Basic Information -->
+          <div class="space-y-4">
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">Title*</label>
+              <input 
+                formControlName="title"
+                class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+              >
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">Description*</label>
+              <textarea 
+                formControlName="description"
+                class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                rows="4"
+              ></textarea>
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">Location*</label>
+              <input 
+                #locationInput
+                formControlName="location"
+                class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+               >
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">Venue</label>
+              <input 
+                formControlName="venue"
+                class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+              >
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-gray-400 font-medium mb-1">City*</label>
+                <input 
+                  formControlName="city"
+                  class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                >
+              </div>
+              <div>
+                <label class="block text-gray-400 font-medium mb-1">State*</label>
+                <input 
+                  formControlName="state"
+                  class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                >
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">Type*</label>
+              <select 
+                formControlName="type"
+                class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+              >
+                <option *ngFor="let type of types" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">Status*</label>
+              <select 
+                formControlName="status"
+                class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="pending">pending</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">Price</label>
+              <input 
+                formControlName="price"
+                type="number"
+                class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+              >
+            </div>
+            
+            <div class="flex items-center">
+              <input 
+                formControlName="adultsOnly"
+                type="checkbox"
+                id="adultsOnly"
+                class="mr-2"
+              >
+              <label for="adultsOnly" class="text-gray-400">Adults Only (18+)</label>
+            </div>
+            
+            <!-- Language Selection - Moved outside date FormGroup -->
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">Languages</label>
+              <select 
+                formControlName="language"
+                multiple
+                class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+              >
+                <option *ngFor="let language of languages" [value]="language">{{ language }}</option>
+              </select>
+              <small class="text-gray-400">Hold Ctrl/Cmd to select multiple languages</small>
+            </div>
+          </div>
+          
+          <!-- Date & Time Section -->
+          <div class="space-y-4">
+            <!-- Date section -->
+            <div formGroupName="date">
+              <div>
+                <label class="block text-gray-400 font-medium mb-1">Date Type*</label>
+                <select 
+                  formControlName="dateType"
+                  class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                >
+                  <option value="single">Single Day</option>
+                  <option value="multiple">Multiple Days</option>
+                  <option value="recurring">Recurring</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-gray-400 font-medium mb-1">Start Date*</label>
+                <input 
+                  formControlName="date"
+                  type="date"
+                  class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                >
+              </div>
+              
+              <div *ngIf="eventForm.get('date')?.get('dateType')?.value === 'multiple'">
+                <label class="block text-gray-400 font-medium mb-1">End Date*</label>
+                <input 
+                  formControlName="endDate"
+                  type="date"
+                  class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                >
+              </div>
+              
+              <div *ngIf="eventForm.get('date')?.get('dateType')?.value === 'recurring'">
+                <label class="block text-gray-400 font-medium mb-1">Recurring Day*</label>
+                <select 
+                  formControlName="recurranceDay"
+                  class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                >
+                  <option value="monday">Monday</option>
+                  <option value="tuesday">Tuesday</option>
+                  <option value="wednesday">Wednesday</option>
+                  <option value="thursday">Thursday</option>
+                  <option value="friday">Friday</option>
+                  <option value="saturday">Saturday</option>
+                  <option value="sunday">Sunday</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Start Times -->
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">Start Times*</label>
+              <div 
+                *ngFor="let time of startTimes.controls; let i = index" 
+                class="flex items-center mb-2"
+              >
+                <input 
+                  [formControlName]="i"
+                  type="time"
+                  class="flex-1 p-2 bg-gray-700 border border-gray-600 rounded text-white mr-2"
+                >
+                <button 
+                  type="button"
+                  class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                  (click)="removeStartTime(i)"
+                >
+                  &times;
+                </button>
+              </div>
+              <button 
+                type="button"
+                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                (click)="addStartTime()"
+              >
+                + Add Start Time
+              </button>
+            </div>
+            
+            <!-- End Times -->
+            <div>
+              <label class="block text-gray-400 font-medium mb-1">End Times*</label>
+              <div 
+                *ngFor="let time of endTimes.controls; let i = index" 
+                class="flex items-center mb-2"
+              >
+                <input 
+                  [formControlName]="i"
+                  type="time"
+                  class="flex-1 p-2 bg-gray-700 border border-gray-600 rounded text-white mr-2"
+                >
+                <button 
+                  type="button"
+                  class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                  (click)="removeEndTime(i)"
+                >
+                  &times;
+                </button>
+              </div>
+              <button 
+                type="button"
+                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                (click)="addEndTime()"
+              >
+                + Add End Time
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Image Upload Section -->
+        <div class="mt-6">
+          <h4 class="text-gray-400 font-medium mb-2">Images</h4>
+          <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-4">
+            <div *ngFor="let image of event.image" class="relative">
+              <img [src]="image.url" class="w-full h-24 object-cover rounded">
+              <button 
+                type="button"
+                class="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full text-xs"
+                (click)="removeImage(image.public_id)"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+          
+          <div class="mb-4 p-4 border border-dashed border-gray-600 rounded">
+            <input 
+              type="file" 
+              #fileInput
+              multiple
+              accept="image/*"
+              class="w-full text-gray-400"
+              (change)="onFileSelected($event)"
+            >
+          </div>
+          
+          <div *ngIf="selectedFiles.length > 0">
+            <button 
+              type="button"
+              class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              (click)="uploadSelectedFiles()"
+              [disabled]="isLoading"
+            >
+              Upload {{ selectedFiles.length }} Files
+            </button>
+            
+            <div *ngIf="uploadProgress > 0 && uploadProgress < 100" class="mt-2">
+              <div class="bg-gray-700 rounded-full h-2.5">
+                <div 
+                  class="bg-blue-600 h-2.5 rounded-full" 
+                  [style.width.%]="uploadProgress"
+                ></div>
+              </div>
+              <p class="text-sm text-gray-400 mt-1">{{ uploadProgress }}% Uploaded</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Tickets Section -->
+        <div class="mt-6">
+          <h4 class="text-gray-400 font-medium mb-2">Tickets</h4>
+          <div *ngFor="let ticket of ticketsArray.controls; let i = index" class="p-4 bg-gray-700 rounded mb-3">
+            <div formGroupName="tickets">
+              <div [formGroupName]="i">
+                <div class="flex justify-between mb-3">
+                  <h5 class="font-medium text-white">Ticket {{ i + 1 }}</h5>
+                  <button 
+                    type="button"
+                    class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                    (click)="removeTicket(i)"
+                  >
+                    Remove
+                  </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-gray-400 text-sm mb-1">Title*</label>
+                    <input 
+                      formControlName="title"
+                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    >
+                    <div *ngIf="ticketsArray.at(i).get('title')?.invalid && ticketsArray.at(i).get('title')?.touched" class="text-red-400 text-xs mt-1">
+                      Title is required
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-gray-400 text-sm mb-1">Price*</label>
+                    <input 
+                      formControlName="price"
+                      type="number"
+                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    >
+                    <div *ngIf="ticketsArray.at(i).get('price')?.invalid && ticketsArray.at(i).get('price')?.touched" class="text-red-400 text-xs mt-1">
+                      Valid price is required
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-gray-400 text-sm mb-1">Total Seats*</label>
+                    <input 
+                      formControlName="seats"
+                      type="number"
+                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    >
+                    <div *ngIf="ticketsArray.at(i).get('seats')?.invalid && ticketsArray.at(i).get('seats')?.touched" class="text-red-400 text-xs mt-1">
+                      Minimum 1 seat required
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-gray-400 text-sm mb-1">Seats Left*</label>
+                    <input 
+                      formControlName="seatsLeft"
+                      type="number"
+                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    >
+                  </div>
+                  
+                  <div class="md:col-span-2">
+                    <label class="block text-gray-400 text-sm mb-1">Description</label>
+                    <textarea 
+                      formControlName="description"
+                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                      rows="2"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            type="button"
+            class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm mt-2"
+            (click)="addTicket()"
+          >
+            + Add Ticket
+          </button>
+        </div>
+        
+        <!-- Terms and Conditions Section -->
+        <div class="mt-6">
+          <h4 class="text-gray-400 font-medium mb-2">Terms & Conditions</h4>
+          
+          <div *ngFor="let tncControl of tncArray.controls; let i = index" class="p-4 bg-gray-700 rounded mb-3">
+            <div formGroupName="tnc">
+              <div [formGroupName]="i">
+                <div class="flex justify-between mb-3">
+                  <h5 class="font-medium text-white">Term {{ i + 1 }}</h5>
+                  <button 
+                    type="button"
+                    class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                    (click)="removeTnC(i)"
+                  >
+                    Remove
+                  </button>
+                </div>
+                
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-gray-400 text-sm mb-1">Heading*</label>
+                    <input 
+                      formControlName="heading"
+                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    >
+                  </div>
+                  
+                  <div>
+                    <label class="block text-gray-400 text-sm mb-1">Text*</label>
+                    <textarea 
+                      formControlName="text"
+                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                      rows="3"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            type="button"
+            class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm mt-2"
+            (click)="addTnC()"
+          >
+            + Add Term & Condition
+          </button>
+        </div>
+        
+        <!-- Coupons Section -->
+        <div class="mt-6">
+          <h4 class="text-gray-400 font-medium mb-2">Coupons</h4>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+            <div *ngFor="let coupon of coupons" class="p-3 bg-gray-700 rounded">
+              <div class="flex justify-between mb-2">
+                <p class="font-medium text-white">{{ coupon.code }}</p>
+                <button 
+                  type="button"
+                  class="text-red-400 hover:text-red-300 text-sm"
+                  (click)="removeCoupon(coupon._id)"
+                >
+                  Remove
+                </button>
+              </div>
+              <p class="text-gray-300">Discount: {{ coupon.value }}%</p>
+              <p class="text-gray-300 text-sm">Expires: {{ coupon.expiry | date:'mediumDate' }}</p>
+            </div>
+          </div>
+          
+          <div class="p-4 bg-gray-700 rounded">
+            <h5 class="font-medium text-white mb-3">Add New Coupon</h5>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-gray-400 text-sm mb-1">Code*</label>
+                <input 
+                  [(ngModel)]="newCoupon.code"
+                  [ngModelOptions]="{standalone: true}"
+                  class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                >
+              </div>
+              
+              <div>
+                <label class="block text-gray-400 text-sm mb-1">Discount %*</label>
+                <input 
+                  [(ngModel)]="newCoupon.value"
+                  [ngModelOptions]="{standalone: true}"
+                  type="number"
+                  min="0"
+                  max="100"
+                  class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                >
+              </div>
+              
+              <div>
+                <label class="block text-gray-400 text-sm mb-1">Expiry Date*</label>
+                <input 
+                  [(ngModel)]="newCoupon.expiry"
+                  [ngModelOptions]="{standalone: true}"
+                  type="date"
+                  class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                >
+              </div>
+            </div>
+            
+            <button 
+              type="button"
+              class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm mt-3"
+              (click)="addCoupon()"
+            >
+              Add Coupon
+            </button>
+          </div>
+        </div>
+        
+        <!-- Save/Cancel Buttons -->
+        <div class="mt-6 flex justify-end space-x-4">
+          <button 
+            type="button"
+            class="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600"
+            (click)="cancelEdit()"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button"
+            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            (click)="saveChanges()"
+          >
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

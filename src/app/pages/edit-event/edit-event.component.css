@@ -1,0 +1,19 @@
+.pac-container {
+    background-color: #2d3748; /* bg-gray-800 */
+    border-color: #4a5568; /* border-gray-700 */
+    z-index: 1100 !important;
+  }
+  
+  .pac-item {
+    color: #e2e8f0; /* text-gray-300 */
+    padding: 0.5rem;
+    border-color: #4a5568; /* border-gray-700 */
+  }
+  
+  .pac-item:hover {
+    background-color: #4a5568; /* hover:bg-gray-700 */
+  }
+  
+  .pac-item-query {
+    color: #f7fafc; /* text-white */
+  }

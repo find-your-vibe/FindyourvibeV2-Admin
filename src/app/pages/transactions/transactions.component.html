@@ -1,0 +1,125 @@
+<div class="mx-auto mt-6 px-4 max-w-7xl text-gray-900 dark:text-gray-100 min-h-screen">
+  <h2 class="text-2xl font-semibold mb-6">Transactions Management</h2>
+
+  <!-- Search and Filter Controls -->
+  <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Search Bar -->
+    <div>
+      <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+          <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="none" viewBox="0 0 20 20">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+          </svg>
+        </div>
+        <input 
+          type="text" 
+          id="search"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchTransactions()"
+          class="block w-full p-2 pl-10 text-sm text-gray-100 border border-gray-600 rounded-lg bg-gray-800 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Search by receipt, event, or location..."
+        />
+      </div>
+    </div>
+
+    <!-- Status Filter -->
+    <div>
+      <label for="statusFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Status</label>
+      <select 
+        id="statusFilter"
+        class="w-full px-4 py-2 block w-full text-sm text-gray-100 border border-gray-600 rounded-lg bg-gray-800 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+        [(ngModel)]="statusFilter"
+        (change)="onStatusFilterChange()">
+        <option *ngFor="let status of statusTypes" [value]="status">
+          {{ status | titlecase }}
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="text-center my-6">
+    <div class="inline-block w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+
+  <!-- Transactions Table -->
+  <div *ngIf="!isLoading">
+    <div class="overflow-x-auto">
+      <table class="min-w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-left rounded-lg">
+        <thead class="bg-gray-100 dark:bg-gray-800">
+          <tr>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Receipt ID</th>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Event</th>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Location</th>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Amount</th>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Tickets</th>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Status</th>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let transaction of filteredTransactions" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.receipt }}</td>
+            <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.eventId.title }}</td>
+            <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.eventId.location }}</td>
+            <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.totalAmount | currency:'INR' }}</td>
+            <td class="px-4 py-2 border-b dark:border-gray-700 space-x-1">
+              <span *ngFor="let ticket of transaction.tickets"
+                class="inline-block bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 px-2 py-1 rounded text-xs">
+                {{ ticket.title }} ({{ ticket.quantity }} × {{ ticket.price | currency:'INR' }})
+              </span>
+            </td>
+            <td class="px-4 py-2 border-b dark:border-gray-700">
+              <span [ngClass]="{
+                'inline-block px-2 py-1 text-xs rounded font-semibold': true,
+                'bg-yellow-100 text-yellow-800 dark:bg-yellow-300 dark:text-yellow-900': transaction.status === 'pending',
+                'bg-green-100 text-green-800 dark:bg-green-300 dark:text-green-900': transaction.status === 'success',
+                'bg-red-100 text-red-800 dark:bg-red-300 dark:text-red-900': transaction.status === 'failed'
+              }">
+                {{ transaction.status | titlecase }}
+              </span>
+            </td>
+            <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.createdAt | date:'medium' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- No Transactions Alert -->
+    <div *ngIf="filteredTransactions.length === 0" class="mt-6 p-4 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-sm rounded">
+      No transactions found.
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-6 flex flex-col items-center">
+      <div class="flex justify-center space-x-2 mb-2">
+        <button 
+          class="px-3 py-1 border rounded text-sm disabled:opacity-50 dark:border-gray-600"
+          [disabled]="currentPage === 1"
+          (click)="pageChanged(currentPage - 1)">
+          Previous
+        </button>
+        <button 
+          *ngFor="let page of getPageNumbers()"
+          class="px-3 py-1 border rounded text-sm dark:border-gray-600"
+          [class.bg-blue-600]="currentPage === page"
+          [class.text-white]="currentPage === page"
+          (click)="pageChanged(page)">
+          {{ page }}
+        </button>
+        <button 
+          class="px-3 py-1 border rounded text-sm disabled:opacity-50 dark:border-gray-600"
+          [disabled]="currentPage === totalPages"
+          (click)="pageChanged(currentPage + 1)">
+          Next
+        </button>
+      </div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">
+        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to 
+        {{ getMinValue(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }} transactions
+      </div>
+    </div>
+  </div>
+</div>
