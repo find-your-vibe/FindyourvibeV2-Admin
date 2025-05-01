@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, AfterViewChecked, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EventService, EventItem, EventTicket } from '../../core/services/events/event.service';
 import { ToasterComponent } from 'src/app/components/toaster/toaster.component';
@@ -21,7 +21,7 @@ interface CouponItem {
   templateUrl: './edit-event.component.html',
   styleUrls: ['./edit-event.component.css']
 })
-export class EditEventComponent implements OnInit, AfterViewInit {
+export class EditEventComponent implements OnInit, AfterViewInit, AfterViewChecked {
   @ViewChild(ToasterComponent) toaster!: ToasterComponent;
   @ViewChild('fileInput') fileInput!: ElementRef;
   @ViewChild('locationInput') locationInput!: ElementRef;
@@ -69,6 +69,8 @@ export class EditEventComponent implements OnInit, AfterViewInit {
     return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
   }
 
+  private autocompleteInitialized = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -92,44 +94,58 @@ export class EditEventComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    // Wait for the view to be fully initialized
+    // Set a small timeout to ensure the DOM is fully ready
     setTimeout(() => {
       this.initializeAutocomplete();
     }, 500);
   }
   
-  
+  ngAfterViewChecked(): void {
+    // Only try to initialize if:
+    // 1. We're in edit mode
+    // 2. The autocomplete hasn't been initialized yet
+    // 3. The locationInput element is available
+    if (this.isEditing && !this.autocompleteInitialized && this.locationInput) {
+      this.initializeAutocomplete();
+    }
+  }
 
   async initializeAutocomplete() {
-    if (!this.locationInput) {
-      console.error('Location input is not defined');
-      return;
-    }
-    if (!this.locationInput?.nativeElement) {
-      console.error('Location input element not found');
-      return;
-    }
-
-    setTimeout(()=>{
-      const input = this.locationInput.nativeElement;
-
-    if (!(input instanceof HTMLInputElement)) {
-      console.error('Element is not an input');
-      return;
-    }
     try {
+      // Safety check
+      if (!this.locationInput || !this.locationInput.nativeElement) {
+        return;
+      }
+
+      // Set flag to prevent multiple initialization attempts
+      this.autocompleteInitialized = true;
+
+      // Load Google Maps API
+      await this.loader.load();
+      
+      const input = this.locationInput.nativeElement;
+      
+      if (!(input instanceof HTMLInputElement)) {
+        console.error('Element is not an input');
+        return;
+      }
+
+      // Create the autocomplete object
       const autocomplete = new google.maps.places.Autocomplete(input, {
         types: ['establishment', 'geocode'],
         componentRestrictions: { country: 'in' },
       });
-  
+
+      // Add the place_changed listener
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
+        
         if (!place.geometry || !place.geometry.location) {
-          console.error("No details available for input: '" + place.name + "'");
+          console.error('No geometry found for selected place');
+          this.eventForm.get('location')?.setErrors({ invalidLocation: true });
           return;
         }
-  
+
         // Update form values
         this.eventForm.patchValue({
           location: place.name,
@@ -138,7 +154,7 @@ export class EditEventComponent implements OnInit, AfterViewInit {
             lng: place.geometry.location.lng()
           }
         });
-  
+
         // Extract city and state
         let city = '';
         let state = '';
@@ -150,18 +166,24 @@ export class EditEventComponent implements OnInit, AfterViewInit {
             state = component.long_name;
           }
         });
-  
+
         this.eventForm.patchValue({
           city: city,
           state: state
         });
+        
+        // Ensure Angular detects the changes
+        this.cdr.detectChanges();
       });
+      
     } catch (error) {
-      console.error('Error loading Google Maps API:', error);
+      console.error('Error initializing autocomplete:', error);
       this.toaster.showToast('error', 'Failed to load location services');
+      // Reset the flag to allow retry
+      this.autocompleteInitialized = false;
     }
-    })
   }
+
   
   initForm(): void {
     this.eventForm = this.fb.group({
@@ -179,16 +201,16 @@ export class EditEventComponent implements OnInit, AfterViewInit {
         url: [''],
         public_id: ['']
       }),
-      priceType: ['', Validators.required],
+      priceType: [''],
       paidType: [null],
-      startTime: this.fb.array([]),
-      endTime: this.fb.array([]),
-      date: this.fb.group({
-        dateType: ['single'],
-        date: ['', Validators.required],
-        endDate: [''],
-        recurranceDay: ['']
-      }),
+      startTime: this.fb.array([this.fb.control('', Validators.required)]),
+    endTime: this.fb.array([this.fb.control('', Validators.required)]),
+    date: this.fb.group({
+      dateType: ['single'],
+      date: [null], // Initialize as null instead of empty string
+      endDate: [null],
+      recurranceDay: [null]
+    }),
       type: ['', Validators.required],
       price: [''],
       language: [[]],
@@ -200,29 +222,34 @@ export class EditEventComponent implements OnInit, AfterViewInit {
 
 
     this.eventForm.get('date.dateType')?.valueChanges.subscribe((dateType) => {
-      const dateControl = this.eventForm.get('date.date');
-      const endDateControl = this.eventForm.get('date.endDate');
-      const recurranceDayControl = this.eventForm.get('date.recurranceDay');
+      const dateGroup = this.eventForm.get('date') as FormGroup;
+      
+      // Reset all date-related fields
+      dateGroup.patchValue({
+        date: null,
+        endDate: null,
+        recurranceDay: null
+      });
     
-      // Reset all controls
-      dateControl?.clearValidators();
-      endDateControl?.clearValidators();
-      recurranceDayControl?.clearValidators();
+      // Clear validators first
+      dateGroup.get('date')?.clearValidators();
+      dateGroup.get('endDate')?.clearValidators();
+      dateGroup.get('recurranceDay')?.clearValidators();
     
       // Set validators based on dateType
       if (dateType === 'single') {
-        dateControl?.setValidators([Validators.required]);
+        dateGroup.get('date')?.setValidators([Validators.required]);
       } else if (dateType === 'multiple') {
-        dateControl?.setValidators([Validators.required]);
-        endDateControl?.setValidators([Validators.required]);
+        dateGroup.get('date')?.setValidators([Validators.required]);
+        dateGroup.get('endDate')?.setValidators([Validators.required]);
       } else if (dateType === 'recurring') {
-        recurranceDayControl?.setValidators([Validators.required]);
+        dateGroup.get('recurranceDay')?.setValidators([Validators.required]);
       }
     
       // Update validity
-      dateControl?.updateValueAndValidity();
-      endDateControl?.updateValueAndValidity();
-      recurranceDayControl?.updateValueAndValidity();
+      dateGroup.get('date')?.updateValueAndValidity();
+      dateGroup.get('endDate')?.updateValueAndValidity();
+      dateGroup.get('recurranceDay')?.updateValueAndValidity();
     });
   }
   
@@ -249,6 +276,17 @@ export class EditEventComponent implements OnInit, AfterViewInit {
     (this.eventForm.get('endTime') as FormArray).clear();
     (this.eventForm.get('tickets') as FormArray).clear();
     (this.eventForm.get('tnc') as FormArray).clear();
+
+    // Format dates properly for input fields
+  const dateData = {
+    dateType: event.date.dateType,
+    date: event.date.date ? this.formatDateForInput(event.date.date) : null,
+    endDate: event.date.endDate ? this.formatDateForInput(event.date.endDate) : null,
+    recurranceDay: event.date.recurranceDay || null
+  };
+  
+  this.eventForm.get('date')?.patchValue(dateData);
+
     
     // Update main fields
     this.eventForm.patchValue({
@@ -390,25 +428,54 @@ export class EditEventComponent implements OnInit, AfterViewInit {
   toggleEdit(): void {
     this.isEditing = !this.isEditing;
     
+    // Reset the initialization flag when toggling edit mode
     if (this.isEditing) {
-      // When switching to edit mode, ensure autocomplete is initialized
-      setTimeout(() => {
-        this.initializeAutocomplete();
-      }, 100);
+      this.autocompleteInitialized = false;
+      // AfterViewChecked will handle initialization
     } else if (this.event._id) {
-      // Reload the event to discard changes
       this.loadEvent(this.event._id);
     }
   }
 
   saveChanges(): void {
     if (!this.event._id) return;
+  
+    // Clean the date object based on dateType
+    const dateType = this.eventForm.get('date.dateType')?.value;
+    const dateData = this.eventForm.get('date')?.value;
+    
+    if (dateType === 'single') {
+      dateData.endDate = undefined;
+      dateData.recurranceDay = undefined;
+    } else if (dateType === 'multiple') {
+      dateData.recurranceDay = undefined;
+    } else if (dateType === 'recurring') {
+      dateData.date = undefined;
+      dateData.endDate = undefined;
+    }
+    
+    this.eventForm.patchValue({ date: dateData });
+  
+    // Check form validity
     if (this.eventForm.invalid) {
-      this.toaster.showToast('error', 'Please fill all required fields');
+      // Get all invalid controls
+      const invalidControls = this.getInvalidControls(this.eventForm);
+      
+      // Create a user-friendly message
+      let errorMessage = 'Please fill all required fields:';
+      
+      invalidControls.forEach(controlName => {
+        // Map form control names to user-friendly labels
+        const fieldLabel = this.getFieldLabel(controlName);
+        errorMessage += `\n- ${fieldLabel}`;
+      });
+  
+      // Show toast with specific missing fields
+      this.toaster.showToast('error', errorMessage);
       return;
     }
     
-    // Update event object with form values
+    // Proceed with saving if form is valid
     const updatedEvent = { ...this.event, ...this.eventForm.value };
     
     this.isLoading = true;
@@ -416,7 +483,7 @@ export class EditEventComponent implements OnInit, AfterViewInit {
       next: () => {
         this.toaster.showToast('success', 'Event updated successfully');
         this.isEditing = false;
-        this.loadEvent(this.event._id!); // Reload to get fresh data
+        this.loadEvent(this.event._id!);
       },
       error: (err) => {
         console.error('Error updating event:', err);
@@ -424,6 +491,95 @@ export class EditEventComponent implements OnInit, AfterViewInit {
         this.isLoading = false;
       }
     });
+  }
+  
+  // Helper method to get invalid controls
+  private getInvalidControls(form: FormGroup): string[] {
+    const invalidControls: string[] = [];
+    
+    Object.keys(form.controls).forEach(controlName => {
+      const control = form.get(controlName);
+      
+      if (control instanceof FormGroup) {
+        // Recursively check nested form groups
+        const nestedInvalid = this.getInvalidControls(control);
+        nestedInvalid.forEach(nestedControl => {
+          invalidControls.push(`${controlName}.${nestedControl}`);
+        });
+      } else if (control instanceof FormArray) {
+        // Check each form array element
+        control.controls.forEach((arrayControl, index) => {
+          if (arrayControl instanceof FormGroup && arrayControl.invalid) {
+            const arrayInvalid = this.getInvalidControls(arrayControl);
+            arrayInvalid.forEach(arrayItem => {
+              invalidControls.push(`${controlName}[${index}].${arrayItem}`);
+            });
+          } else if (arrayControl.invalid) {
+            invalidControls.push(`${controlName}[${index}]`);
+          }
+        });
+      } else if (control?.invalid) {
+        invalidControls.push(controlName);
+      }
+    });
+    
+    return invalidControls;
+  }
+  
+  // Helper method to map control names to user-friendly labels
+  private getFieldLabel(controlPath: string): string {
+    const labelMap: {[key: string]: string} = {
+      'title': 'Event Title',
+      'description': 'Description',
+      'location': 'Location',
+      'state': 'State',
+      'city': 'City',
+      'coordinates.lat': 'Latitude',
+      'coordinates.lng': 'Longitude',
+      'date.dateType': 'Date Type',
+      'date.date': 'Event Date',
+      'date.endDate': 'End Date',
+      'date.recurranceDay': 'Recurrence Day',
+      'type': 'Event Type',
+      'startTime': 'Start Time',
+      'endTime': 'End Time',
+      'tickets': 'Tickets',
+      'tickets.title': 'Ticket Title',
+      'tickets.price': 'Ticket Price',
+      'tickets.seats': 'Ticket Seats',
+      'language': 'Languages'
+    };
+  
+    // Try to find exact match first
+    if (labelMap[controlPath]) {
+      return labelMap[controlPath];
+    }
+  
+    // Handle array indices (e.g., startTime[0])
+    const arrayMatch = controlPath.match(/^(.+?)\[\d+\]$/);
+    if (arrayMatch && labelMap[arrayMatch[1]]) {
+      return labelMap[arrayMatch[1]];
+    }
+  
+    // Handle nested paths (e.g., tickets[0].title)
+    const nestedMatch = controlPath.match(/^(.+?)\.(.+)$/);
+    if (nestedMatch) {
+      const parent = nestedMatch[1].replace(/\[\d+\]/g, '');
+      const child = nestedMatch[2];
+      if (labelMap[`${parent}.${child}`]) {
+        return labelMap[`${parent}.${child}`];
+      }
+      if (labelMap[child]) {
+        return `${this.getFieldLabel(parent)} - ${labelMap[child]}`;
+      }
+    }
+  
+    // Default: return the control path with some formatting
+    return controlPath
+      .replace(/\./g, ' - ')
+      .replace(/\[\d+\]/g, '')
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase());
   }
 
   cancelEdit(): void {
@@ -667,4 +823,14 @@ export class EditEventComponent implements OnInit, AfterViewInit {
     this.coupons = this.coupons.filter(c => c._id !== couponId);
     this.toaster.showToast('success', 'Coupon removed successfully');
   }
+
+  getTicketFormGroup(index: number): FormGroup {
+    return this.ticketsArray.at(index) as FormGroup;
+  }
+  
+  getTnCFormGroup(index: number): FormGroup {
+    return this.tncArray.at(index) as FormGroup;
+  }
+
+  
 }

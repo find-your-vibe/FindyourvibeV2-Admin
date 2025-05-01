@@ -15,7 +15,7 @@ export class TransactionsComponent implements OnInit {
   totalItems = 0;
   totalPages = 0;
   searchTerm = '';
-  statusFilter: string = 'all';
+  statusFilter: string = 'success';
   transactionTypes = ['all', 'online', 'offline'];
   statusTypes = ['all', 'pending', 'success', 'failed'];
 

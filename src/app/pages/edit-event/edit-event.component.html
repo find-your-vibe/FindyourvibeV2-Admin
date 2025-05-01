@@ -139,7 +139,10 @@
                 #locationInput
                 formControlName="location"
                 class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-               >
+                id="locationInput"
+                type="text"
+                autocomplete="off"
+              >
             </div>
             
             <div>
@@ -208,7 +211,7 @@
               <label for="adultsOnly" class="text-gray-400">Adults Only (18+)</label>
             </div>
             
-            <!-- Language Selection - Moved outside date FormGroup -->
+            <!-- Language Selection -->
             <div>
               <label class="block text-gray-400 font-medium mb-1">Languages</label>
               <select 
@@ -273,15 +276,12 @@
               </div>
             </div>
             
-            <!-- Start Times -->
+            <!-- For Start Times -->
             <div>
-              <label class="block text-gray-400 font-medium mb-1">Start Times*</label>
-              <div 
-                *ngFor="let time of startTimes.controls; let i = index" 
-                class="flex items-center mb-2"
-              >
+              <label class="block text-gray-400 font-medium mb-1">Start Times</label>
+              <div *ngFor="let time of startTimes.controls; let i = index" class="flex items-center mb-2">
                 <input 
-                  [formControlName]="i"
+                  [formControl]="$any(time)"
                   type="time"
                   class="flex-1 p-2 bg-gray-700 border border-gray-600 rounded text-white mr-2"
                 >
@@ -294,23 +294,20 @@
                 </button>
               </div>
               <button 
-                type="button"
-                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                type="button" 
+                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm mt-2"
                 (click)="addStartTime()"
               >
                 + Add Start Time
               </button>
             </div>
-            
-            <!-- End Times -->
+
+            <!-- For End Times -->
             <div>
-              <label class="block text-gray-400 font-medium mb-1">End Times*</label>
-              <div 
-                *ngFor="let time of endTimes.controls; let i = index" 
-                class="flex items-center mb-2"
-              >
+              <label class="block text-gray-400 font-medium mb-1">End Times</label>
+              <div *ngFor="let time of endTimes.controls; let i = index" class="flex items-center mb-2">
                 <input 
-                  [formControlName]="i"
+                  [formControl]="$any(time)"
                   type="time"
                   class="flex-1 p-2 bg-gray-700 border border-gray-600 rounded text-white mr-2"
                 >
@@ -323,8 +320,8 @@
                 </button>
               </div>
               <button 
-                type="button"
-                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                type="button" 
+                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm mt-2"
                 (click)="addEndTime()"
               >
                 + Add End Time
@@ -385,73 +382,68 @@
         <!-- Tickets Section -->
         <div class="mt-6">
           <h4 class="text-gray-400 font-medium mb-2">Tickets</h4>
-          <div *ngFor="let ticket of ticketsArray.controls; let i = index" class="p-4 bg-gray-700 rounded mb-3">
-            <div formGroupName="tickets">
-              <div [formGroupName]="i">
-                <div class="flex justify-between mb-3">
-                  <h5 class="font-medium text-white">Ticket {{ i + 1 }}</h5>
-                  <button 
-                    type="button"
-                    class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                    (click)="removeTicket(i)"
+          <div *ngFor="let ticketGroup of ticketsArray.controls; let i = index" class="p-4 bg-gray-700 rounded mb-3">
+            <div [formGroup]="getTicketFormGroup(i)">
+              <div class="flex justify-between mb-3">
+                <h5 class="font-medium text-white">Ticket {{ i + 1 }}</h5>
+                <button 
+                  type="button"
+                  class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                  (click)="removeTicket(i)"
+                >
+                  Remove
+                </button>
+              </div>
+                
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1">Title*</label>
+                  <input 
+                    formControlName="title"
+                    class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
                   >
-                    Remove
-                  </button>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-gray-400 text-sm mb-1">Title*</label>
-                    <input 
-                      formControlName="title"
-                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
-                    >
-                    <div *ngIf="ticketsArray.at(i).get('title')?.invalid && ticketsArray.at(i).get('title')?.touched" class="text-red-400 text-xs mt-1">
-                      Title is required
-                    </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1">Price*</label>
+                  <input 
+                    formControlName="price"
+                    type="number"
+                    class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                  >
+                  <div *ngIf="ticketsArray.at(i).get('price')?.invalid && ticketsArray.at(i).get('price')?.touched" class="text-red-400 text-xs mt-1">
+                    Valid price is required
                   </div>
-                  
-                  <div>
-                    <label class="block text-gray-400 text-sm mb-1">Price*</label>
-                    <input 
-                      formControlName="price"
-                      type="number"
-                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
-                    >
-                    <div *ngIf="ticketsArray.at(i).get('price')?.invalid && ticketsArray.at(i).get('price')?.touched" class="text-red-400 text-xs mt-1">
-                      Valid price is required
-                    </div>
+                </div>
+                
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1">Total Seats*</label>
+                  <input 
+                    formControlName="seats"
+                    type="number"
+                    class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                  >
+                  <div *ngIf="ticketsArray.at(i).get('seats')?.invalid && ticketsArray.at(i).get('seats')?.touched" class="text-red-400 text-xs mt-1">
+                    Minimum 1 seat required
                   </div>
-                  
-                  <div>
-                    <label class="block text-gray-400 text-sm mb-1">Total Seats*</label>
-                    <input 
-                      formControlName="seats"
-                      type="number"
-                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
-                    >
-                    <div *ngIf="ticketsArray.at(i).get('seats')?.invalid && ticketsArray.at(i).get('seats')?.touched" class="text-red-400 text-xs mt-1">
-                      Minimum 1 seat required
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label class="block text-gray-400 text-sm mb-1">Seats Left*</label>
-                    <input 
-                      formControlName="seatsLeft"
-                      type="number"
-                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
-                    >
-                  </div>
-                  
-                  <div class="md:col-span-2">
-                    <label class="block text-gray-400 text-sm mb-1">Description</label>
-                    <textarea 
-                      formControlName="description"
-                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
-                      rows="2"
-                    ></textarea>
-                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1">Seats Left*</label>
+                  <input 
+                    formControlName="seatsLeft"
+                    type="number"
+                    class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                  >
+                </div>
+                
+                <div class="md:col-span-2">
+                  <label class="block text-gray-400 text-sm mb-1">Description</label>
+                  <textarea 
+                    formControlName="description"
+                    class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    rows="2"
+                  ></textarea>
                 </div>
               </div>
             </div>
@@ -470,37 +462,35 @@
         <div class="mt-6">
           <h4 class="text-gray-400 font-medium mb-2">Terms & Conditions</h4>
           
-          <div *ngFor="let tncControl of tncArray.controls; let i = index" class="p-4 bg-gray-700 rounded mb-3">
-            <div formGroupName="tnc">
-              <div [formGroupName]="i">
-                <div class="flex justify-between mb-3">
-                  <h5 class="font-medium text-white">Term {{ i + 1 }}</h5>
-                  <button 
-                    type="button"
-                    class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                    (click)="removeTnC(i)"
+          <div *ngFor="let tncGroup of tncArray.controls; let i = index" class="p-4 bg-gray-700 rounded mb-3">
+            <div [formGroup]="getTnCFormGroup(i)">
+              <div class="flex justify-between mb-3">
+                <h5 class="font-medium text-white">Term {{ i + 1 }}</h5>
+                <button 
+                  type="button"
+                  class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                  (click)="removeTnC(i)"
+                >
+                  Remove
+                </button>
+              </div>
+              
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1">Heading*</label>
+                  <input 
+                    formControlName="heading"
+                    class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
                   >
-                    Remove
-                  </button>
                 </div>
                 
-                <div class="space-y-3">
-                  <div>
-                    <label class="block text-gray-400 text-sm mb-1">Heading*</label>
-                    <input 
-                      formControlName="heading"
-                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
-                    >
-                  </div>
-                  
-                  <div>
-                    <label class="block text-gray-400 text-sm mb-1">Text*</label>
-                    <textarea 
-                      formControlName="text"
-                      class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
-                      rows="3"
-                    ></textarea>
-                  </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1">Text*</label>
+                  <textarea 
+                    formControlName="text"
+                    class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    rows="3"
+                  ></textarea>
                 </div>
               </div>
             </div>
