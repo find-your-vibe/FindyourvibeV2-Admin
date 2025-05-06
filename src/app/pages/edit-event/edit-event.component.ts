@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, AfterViewChecked, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, AfterViewChecked, ChangeDetectorRef  } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EventService, EventItem, EventTicket } from '../../core/services/events/event.service';
 import { ToasterComponent } from 'src/app/components/toaster/toaster.component';
@@ -94,9 +94,11 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
   }
 
   ngAfterViewInit(): void {
-    // Set a small timeout to ensure the DOM is fully ready
+    // Add a delay to ensure DOM is ready
     setTimeout(() => {
-      this.initializeAutocomplete();
+      if (this.locationInput && this.locationInput.nativeElement) {
+        this.initializeAutocomplete();
+      }
     }, 500);
   }
   
@@ -323,16 +325,26 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
       endDate: this.formatDateForInput(event.date.endDate || ''),
       recurranceDay: event.date.recurranceDay || ''
     });
+
+    (this.eventForm.get('startTime') as FormArray).clear();
+    (this.eventForm.get('endTime') as FormArray).clear();
     
-    // Add start times
-    event.startTime.forEach(time => {
-      this.addStartTime(time);
-    });
+    if (event.startTime && event.startTime.length > 0) {
+      event.startTime.forEach(time => {
+        this.addStartTime(time);
+      });
+    } else {
+      this.addStartTime('');
+    }
     
-    // Add end times
-    event.endTime.forEach(time => {
-      this.addEndTime(time);
-    });
+    // Add end times (if array is empty, add at least one control)
+    if (event.endTime && event.endTime.length > 0) {
+      event.endTime.forEach(time => {
+        this.addEndTime(time);
+      });
+    } else {
+      this.addEndTime('');
+    }
     
     // Add tickets
     if (event.tickets && event.tickets.length > 0) {
@@ -445,6 +457,7 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
     if (this.isEditing) {
       this.autocompleteInitialized = false;
       // AfterViewChecked will handle initialization
+      this.initializeAutocomplete();
     } else if (this.event._id) {
       this.loadEvent(this.event._id);
     }
