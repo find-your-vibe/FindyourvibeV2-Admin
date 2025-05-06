@@ -340,4 +340,48 @@ getEvents(options: PaginationOptions = { page: 1, limit: 10 }): Observable<Event
       })
     );
   }
+
+  /**
+   * Create a new coupon for an event
+   * 
+   * @param eventId ID of the event
+   * @param coupon Coupon object to create
+   */
+  deleteCoupon(eventId: string, couponId: string): Observable<boolean> {
+    return this.http.delete<{success: boolean, message?: string}>(
+      `${this.apiUrl}/${eventId}/coupons/${couponId}`
+    ).pipe(
+      map(response => {
+        if (response && response.success) {
+          return true;
+        }
+        return false;
+      }),
+      catchError(error => {
+        console.error(`Error deleting coupon ${couponId}:`, error);
+        return of(false);
+      })
+    );
+  }
+  /**
+   * Create a new coupon for an event
+   * 
+   * @param eventId ID of the event
+   * @param coupon Coupon object to create
+   */
+  addCoupon(eventId: string, coupon: { code: string; value: number; expiry: string; usageLimit?: number }): Observable<CouponItem> {
+    return this.http.post<{success: boolean, data: CouponItem}>(`${this.apiUrl}/${eventId}/coupons`, coupon).pipe(
+      map(response => {
+        if (response && response.success) {
+          return response.data;
+        }
+        throw new Error('Failed to add coupon');
+      }),
+      catchError(error => {
+        console.error('Error adding coupon:', error);
+        throw error;
+      })
+    );
+  }
+
 }

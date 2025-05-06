@@ -259,8 +259,20 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
       next: (event) => {
         this.event = event;
         this.updateForm(event);
-        this.isLoading = false;
-        this.cdr.detectChanges(); // Add this line to force change detection
+        
+        // Load coupons separately
+        this.eventService.getEventCoupons(eventId).subscribe({
+          next: (couponsData: any) => {
+            this.coupons = couponsData || [];
+            this.isLoading = false;
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            console.error('Error loading coupons:', err);
+            this.isLoading = false;
+            this.cdr.detectChanges();
+          }
+        });
       },
       error: (err) => {
         console.error('Error loading event:', err);
@@ -269,6 +281,7 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
       }
     });
   }
+  
   
   updateForm(event: EventItem): void {
     // Clear existing form arrays
@@ -481,9 +494,16 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
     this.isLoading = true;
     this.eventService.editEvent(this.event._id, updatedEvent).subscribe({
       next: () => {
-        this.toaster.showToast('success', 'Event updated successfully');
-        this.isEditing = false;
-        this.loadEvent(this.event._id!);
+        // After event is saved, save all coupons
+        this.saveCoupons(this.event._id!).then(() => {
+          this.toaster.showToast('success', 'Event and coupons updated successfully');
+          this.isEditing = false;
+          this.loadEvent(this.event._id!);
+        }).catch(err => {
+          console.error('Error saving coupons:', err);
+          this.toaster.showToast('warning', 'Event saved but some coupons may not have been saved');
+          this.isLoading = false;
+        });
       },
       error: (err) => {
         console.error('Error updating event:', err);
@@ -491,6 +511,25 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
         this.isLoading = false;
       }
     });
+  }
+  
+  // Helper method to save all coupons
+  private async saveCoupons(eventId: string): Promise<void> {
+    // Filter out coupons that need to be created (have temp IDs)
+    const newCoupons = this.coupons.filter(c => c._id.startsWith('temp_'));
+    
+    // Create promises for all coupon operations
+    const promises = newCoupons.map(coupon => {
+      const couponData = {
+        code: coupon.code,
+        value: coupon.value,
+        expiry: coupon.expiry
+      };
+      return this.eventService.addCoupon(eventId, couponData).toPromise();
+    });
+    
+    // Wait for all promises to resolve
+    await Promise.all(promises);
   }
   
   // Helper method to get invalid controls
@@ -798,11 +837,11 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
       return;
     }
     
-    // Here you would call a service method to add the coupon
-    // this.couponService.addCoupon(this.event._id!, this.newCoupon).subscribe({...})
-    
-    // For now, just add to local array
-    this.coupons.push({...this.newCoupon, _id: 'temp_' + Date.now()});
+    // Add to local array with a temporary ID
+    this.coupons.push({
+      ...this.newCoupon,
+      _id: 'temp_' + Date.now() // Temporary ID to track locally
+    });
     
     // Reset the form
     this.newCoupon = {
@@ -812,16 +851,13 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
       expiry: ''
     };
     
-    this.toaster.showToast('success', 'Coupon added successfully');
+    this.toaster.showToast('success', 'Coupon added to form');
   }
   
   removeCoupon(couponId: string): void {
-    // Here you would call a service method to remove the coupon
-    // this.couponService.removeCoupon(this.event._id!, couponId).subscribe({...})
-    
-    // For now, just remove from local array
+    // Remove from local array
     this.coupons = this.coupons.filter(c => c._id !== couponId);
-    this.toaster.showToast('success', 'Coupon removed successfully');
+    this.toaster.showToast('success', 'Coupon removed from form');
   }
 
   getTicketFormGroup(index: number): FormGroup {

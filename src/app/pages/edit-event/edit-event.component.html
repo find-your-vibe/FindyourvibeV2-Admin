@@ -422,6 +422,7 @@
                     formControlName="seats"
                     type="number"
                     class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    required
                   >
                   <div *ngIf="ticketsArray.at(i).get('seats')?.invalid && ticketsArray.at(i).get('seats')?.touched" class="text-red-400 text-xs mt-1">
                     Minimum 1 seat required
@@ -434,6 +435,7 @@
                     formControlName="seatsLeft"
                     type="number"
                     class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    required
                   >
                 </div>
                 
@@ -443,6 +445,7 @@
                     formControlName="description"
                     class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
                     rows="2"
+                    required
                   ></textarea>
                 </div>
               </div>
