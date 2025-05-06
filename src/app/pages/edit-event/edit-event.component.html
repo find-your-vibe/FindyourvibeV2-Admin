@@ -134,12 +134,12 @@
             </div>
             
             <div>
-              <label class="block text-gray-400 font-medium mb-1">Location*</label>
+              <label for="location" class="block text-gray-400 font-medium mb-1">Location*</label>
               <input 
                 #locationInput
                 formControlName="location"
                 class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                id="locationInput"
+                id="location"
                 type="text"
                 autocomplete="off"
               >
@@ -510,7 +510,9 @@
         
         <!-- Coupons Section -->
         <div class="mt-6">
-          <h4 class="text-gray-400 font-medium mb-2">Coupons</h4>
+          <h4 class="text-gray-400 font-medium mb-2">Coupons
+            <span class="text-xs">(first fill in the data, then click to add coupon, then save Event)</span>
+          </h4>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             <div *ngFor="let coupon of coupons" class="p-3 bg-gray-700 rounded">
