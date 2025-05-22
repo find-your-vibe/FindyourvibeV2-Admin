@@ -113,78 +113,92 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
   }
 
   async initializeAutocomplete() {
-    try {
-      // Safety check
-      if (!this.locationInput || !this.locationInput.nativeElement) {
-        return;
-      }
-
-      // Set flag to prevent multiple initialization attempts
-      this.autocompleteInitialized = true;
-
-      // Load Google Maps API
-      await this.loader.load();
-      
-      const input = this.locationInput.nativeElement;
-      
-      if (!(input instanceof HTMLInputElement)) {
-        console.error('Element is not an input');
-        return;
-      }
-
-      // Create the autocomplete object
-      const autocomplete = new google.maps.places.Autocomplete(input, {
-        types: ['establishment', 'geocode'],
-        componentRestrictions: { country: 'in' },
-      });
-
-      // Add the place_changed listener
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        
-        if (!place.geometry || !place.geometry.location) {
-          console.error('No geometry found for selected place');
-          this.eventForm.get('location')?.setErrors({ invalidLocation: true });
-          return;
-        }
-
-        // Update form values
-        this.eventForm.patchValue({
-          location: place.name,
-          coordinates: {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng()
-          }
-        });
-
-        // Extract city and state
-        let city = '';
-        let state = '';
-        place.address_components?.forEach((component) => {
-          if (component.types.includes('locality')) {
-            city = component.long_name;
-          }
-          if (component.types.includes('administrative_area_level_1')) {
-            state = component.long_name;
-          }
-        });
-
-        this.eventForm.patchValue({
-          city: city,
-          state: state
-        });
-        
-        // Ensure Angular detects the changes
-        this.cdr.detectChanges();
-      });
-      
-    } catch (error) {
-      console.error('Error initializing autocomplete:', error);
-      this.toaster.showToast('error', 'Failed to load location services');
-      // Reset the flag to allow retry
-      this.autocompleteInitialized = false;
+  try {
+    // Safety check
+    if (!this.locationInput?.nativeElement) {
+      console.error('Location input element not found');
+      return;
     }
+
+    const input = this.locationInput.nativeElement;
+    
+    if (!(input instanceof HTMLInputElement)) {
+      console.error('Element is not an input');
+      return;
+    }
+
+    // Load Google Maps API if not already loaded
+    await this.loader.load();
+
+    const autocomplete = new google.maps.places.Autocomplete(input, {
+      types: ['establishment', 'geocode'],
+      componentRestrictions: { country: 'in' },
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (!place.geometry || !place.geometry.location) {
+        console.error('No geometry found for selected place');
+        this.eventForm.get('location')?.setErrors({ invalidLocation: true });
+        return;
+      }
+
+      // Extract city and state from address components
+      let city = '';
+      let state = '';
+      let addressComponents: string[] = [];
+
+      place.address_components?.forEach((component) => {
+        if (component.types.includes('locality')) {
+          city = component.long_name;
+        } else if (component.types.includes('administrative_area_level_1')) {
+          state = component.long_name;
+        } else if (
+          component.types.includes('sublocality') || 
+          component.types.includes('sublocality_level_1') ||
+          component.types.includes('sublocality_level_2') ||
+          component.types.includes('route') ||
+          component.types.includes('street_number') ||
+          component.types.includes('premise') ||
+          component.types.includes('neighborhood')
+        ) {
+          addressComponents.push(component.long_name);
+        }
+      });
+
+      // Start with the place name
+      let address = place.name;
+      
+      // Add additional address components
+      if (addressComponents.length > 0) {
+        const uniqueComponents = addressComponents.filter(
+          component => address && !address.includes(component)
+        );
+        
+        if (uniqueComponents.length > 0) {
+          address += ', ' + uniqueComponents.join(', ');
+        }
+      }
+
+      // Explicitly set values like in the working version
+      this.eventForm.get('location')?.setValue(address);
+      this.eventForm.get('coordinates.lat')?.setValue(place.geometry.location.lat());
+      this.eventForm.get('coordinates.lng')?.setValue(place.geometry.location.lng());
+      this.eventForm.get('city')?.setValue(city);
+      this.eventForm.get('state')?.setValue(state);
+      console.log(this.eventForm);
+      
+
+      this.cdr.detectChanges();
+    });
+
+    this.autocompleteInitialized = true;
+  } catch (error) {
+    console.error('Error initializing autocomplete:', error);
+    this.toaster.showToast('error', 'Failed to load location services');
+    this.autocompleteInitialized = false;
   }
+}
 
   
   initForm(): void {

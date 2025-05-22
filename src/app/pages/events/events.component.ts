@@ -114,4 +114,19 @@ export class EventsComponent implements OnInit {
   viewEventDetails(eventId: string): void {
     this.router.navigate(['/events', eventId]);
   }
+
+  deleteEvent(eventId: string): void {
+    if (!confirm('Are you sure you want to delete this event?')) {
+      return;
+    }
+    this.eventService.deleteEvent(eventId).subscribe({
+      next: () => {
+        this.events = this.events.filter(event => event._id !== eventId);
+        this.totalItems--;
+      },
+      error: (err) => {
+        console.error('Error deleting event:', err);
+      }
+    });
+  }
 }

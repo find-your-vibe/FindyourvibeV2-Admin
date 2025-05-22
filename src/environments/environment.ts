@@ -9,6 +9,7 @@ export const environment = {
         content: 'https://api.content.findyourvibe.in',
         offer: 'https://api.offers.findyourvibe.in',
         onlinePayment: 'https://api.online.findyourvibe.in',
+        offlineBooking: 'https://api.offline.findyourvibe.in',
         email: 'https://api.email.findyourvibe.in',
     },
     googleClientId:'473749765121-0h0b6ue1t8bpqu7d4lldjg6ju94c05sd.apps.googleusercontent.com',

@@ -1,0 +1,779 @@
+<app-toaster></app-toaster>
+<div
+  class="px-4 max-w-7xl mx-auto mt-6 text-white min-h-[550px]"
+>
+  <!-- Loading spinner -->
+  <div *ngIf="loading" class="flex justify-center items-center h-64">
+    <svg
+      class="animate-spin h-10 w-10 text-white"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+    >
+      <path
+        fill="currentColor"
+        d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20zm1.5 15h-3v-3h3v3zm0-4.5h-3V7h3v5.5z"
+      />
+    </svg>
+  </div>
+
+  <div *ngIf="!loading">
+    <h1
+      class="text-2xl font-bold text-white font-dm-sans flex gap-1 items-center mb-4"
+    >
+      <span class="text-white">{{ eventDetails?.title }}</span>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+      >
+        <path
+          fill="none"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2.5"
+          d="m10 17l5-5m0 0l-5-5"
+        />
+      </svg>
+    </h1>
+    <!-- Event Details Header -->
+    <div
+      class="bg-white/10 rounded-lg shadow-lg p-6 mb-6 border border-gray-700"
+    >
+      <div class="flex flex-wrap justify-between text-sm text-gray-200">
+        <div class="mb-2 flex items-start sm:items-center gap-1">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            class="min-w-[16px] min-h-[16px] text-gray-400"
+          >
+            <path
+              fill="currentColor"
+              d="M5.843 4.568a8.707 8.707 0 0 1 12.314 12.314l-1.187 1.174q-1.312 1.288-3.406 3.312a2.25 2.25 0 0 1-3.128 0l-3.49-3.396q-.66-.646-1.103-1.09a8.707 8.707 0 0 1 0-12.314M17.097 5.63A7.207 7.207 0 0 0 6.904 15.822l1.487 1.467q1.228 1.202 3.088 3a.75.75 0 0 0 1.043.001l3.395-3.302q.703-.69 1.18-1.166a7.207 7.207 0 0 0 0-10.193M12 7.999a3.002 3.002 0 1 1 0 6.003a3.002 3.002 0 0 1 0-6.003m0 1.5a1.502 1.502 0 1 0 0 3.003A1.502 1.502 0 0 0 12 9.5"
+            />
+          </svg>
+          {{ eventDetails?.venue }}, {{ eventDetails?.city }},
+          {{ eventDetails?.state }}
+        </div>
+        <div class="mb-2 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="#9ca3af"
+            style="height: 16px; width: 16px"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          <span *ngIf="eventDetails?.date?.dateType === 'single'">
+            {{ eventDetails?.date?.date | date : "MMM d, y" }}
+          </span>
+          <span *ngIf="eventDetails?.date?.dateType === 'multiple'">
+            {{ eventDetails?.date?.date | date : "MMM d, y" }} -
+            {{ eventDetails?.date?.endDate | date : "MMM d, y" }}
+          </span>
+          <span *ngIf="eventDetails?.date?.dateType === 'recurring'">
+            Every {{ eventDetails?.date?.recurranceDay }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction Filters -->
+    <div
+      class="bg-white/10 rounded-lg shadow-lg p-6 mb-6 border border-gray-700"
+    >
+      <div class="flex flex-wrap justify-between items-center">
+        <h2 class="text-xl font-semibold text-white mb-4">Ticket Buyers</h2>
+
+        <div class="flex items-center space-x-2 mb-4">
+          <span class="text-sm text-gray-200"
+            >Total Tickets Sold:
+            <span class="text-white">{{
+              totalAllTicketsSold()
+            }}</span></span
+          >
+          <span class="mx-2 text-gray-500">|</span>
+          <span class="text-sm text-gray-200">
+            Total Checked In:
+            <span class="text-white">{{ totalCheckedInCount() }}</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-4 mb-4">
+        <!-- Search -->
+        <div class="flex-grow">
+          <input
+            type="text"
+            placeholder="Search by name, email, or receipt ID"
+            class="w-full px-4 py-2 bg-white/20 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-white text-white"
+            [(ngModel)]="searchQuery"
+            (input)="applyFilters()"
+          />
+        </div>
+
+        <!-- Status Filter -->
+        <!-- <div>
+          <select
+            class="appearance-none w-full px-4 py-2 bg-white/10 text-white border-2 border-transparent rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent cursor-pointer transition-all duration-300 hover:shadow-lg font-medium text-xs sm:text-sm relative"
+            [(ngModel)]="filterStatus"
+          >
+            <option value="all" class="bg-white text-gray-800 hover:bg-white/30">All Statuses</option>
+            <option value="success" class="bg-white text-gray-800 hover:bg-white/30">Success</option>
+            <option value="pending" class="bg-white text-gray-800 hover:bg-white/30">Pending</option>
+            <option value="failed" class="bg-white text-gray-800 hover:bg-white/30">Failed</option>
+          </select>
+        </div> -->
+
+        <!-- Ticket Type Filter -->
+        <div class="flex">
+          <select
+            class="appearance-none w-full px-4 py-2 bg-white/10 text-white border-2 border-transparent rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent cursor-pointer transition-all duration-300 hover:shadow-lg font-medium text-xs sm:text-sm relative"
+            [(ngModel)]="filterTicketType"
+          >
+            <option
+              value="all"
+              class="bg-white text-gray-800 hover:bg-white/30"
+            >
+              All Ticket Types
+            </option>
+            <option
+              *ngFor="let ticketType of getTicketTypes()"
+              [value]="ticketType"
+              class="bg-white text-gray-800 hover:bg-white/30"
+            >
+              {{ ticketType }}
+            </option>
+          </select>
+        </div>
+        <button
+          (click)="showCreateForm = !showCreateForm"
+          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-white/70 transition text-lg font-semibold"
+          title="Create Offline Booking"
+        >
+          +
+          <span
+            class="hidden md:inline-block text-sm ml-2"
+            >Create Offline Booking</span
+          >
+        </button>
+      </div>
+    </div>
+
+    <!-- Ticket Categories -->
+    <div *ngFor="let ticketTitle of getTicketTypes()" class="mb-8">
+      <div
+        *ngIf="
+          filteredGroupedTransactions[ticketTitle] &&
+          (filterTicketType === 'all' || filterTicketType === ticketTitle)
+        "
+      >
+        <div
+          class="bg-white/10 rounded-lg shadow-lg p-6 border border-gray-700"
+        >
+          <h3 class="text-lg font-semibold text-white mb-4">
+            Ticket: {{ ticketTitle }}
+            <span
+              class="ml-2 px-3 py-1 text-xs rounded-full bg-indigo-600 text-white whitespace-nowrap"
+            >
+              {{ filteredGroupedTransactions[ticketTitle].length }} buyers
+            </span>
+          </h3>
+
+          <!-- Transactions Table -->
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr class="bg-black/30 text-white uppercase text-xs">
+                  <th class="py-3 px-4 text-left">#</th>
+                  <th class="py-3 px-4 text-left">Buyer</th>
+                  <th class="py-3 px-4 text-left">Quantity</th>
+                  <th class="py-3 px-4 text-left">Ticket Price</th>
+                  <th class="py-3 px-4 text-left">Purchase Date</th>
+                  <!-- <th class="py-3 px-4 text-left">Total Amount</th> -->
+                  <th class="py-3 px-4 text-left">Valid Dates</th>
+                  <th class="py-3 px-4 text-left">Receipt</th>
+                  <th class="py-3 px-4 text-center">Status</th>
+                  <th class="py-3 px-4 text-center">Check-In</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-700">
+                <tr
+                  *ngFor="
+                    let transaction of getPaginatedData(
+                      filteredGroupedTransactions[ticketTitle]
+                    );
+                    let i = index
+                  "
+                  class="hover:bg-white/5"
+                >
+                  <td class="py-3 px-4 text-gray-200">
+                    {{ (currentPage - 1) * itemsPerPage + i + 1 }}
+                  </td>
+
+                  <td class="py-3 px-4 text-gray-200">
+                    <div *ngIf="transaction.userId">
+                      <div class="font-medium">
+                        {{ transaction.userId.name }}
+                      </div>
+                      <div class="text-sm text-gray-400">
+                        {{ transaction.userId.email }}
+                      </div>
+                    </div>
+                    <div *ngIf="!transaction.userId">
+                      <span class="text-gray-400">Anonymous</span>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4 text-gray-200">
+                    {{ transaction.currentTicket.quantity || 1 }}
+                  </td>
+                  <td class="py-3 px-4 text-gray-200">
+                    ₹{{
+                      transaction.currentTicket.price ||
+                        getTicketPrice(transaction.currentTicket.title)
+                    }}
+                  </td>
+                  <td class="py-3 px-4 text-gray-200">
+                    {{ formatDate(transaction.createdAt) }}
+                  </td>
+                  <!-- <td class="py-3 px-4 text-gray-200">
+                    ₹{{ transaction.totalAmount }}
+                  </td> -->
+                  <td class="py-3 px-4 text-gray-200">
+                    <div *ngIf="transaction.currentTicket.dates">
+                      <div
+                        *ngFor="
+                          let dateRange of transaction.currentTicket.dates
+                        "
+                        class="text-sm whitespace-nowrap"
+                      >
+                        <ng-container *ngIf="dateRange.length === 1">
+                          {{ dateRange[0] | date : "MMM d, y" }}
+                        </ng-container>
+                        <ng-container *ngIf="dateRange.length === 2">
+                          {{ dateRange[0] | date : "MMM d, y" }} -
+                          {{ dateRange[1] | date : "MMM d, y" }}
+                        </ng-container>
+                      </div>
+                    </div>
+                    <div *ngIf="!transaction.currentTicket.dates">
+                      <span class="text-sm text-gray-400">All event dates</span>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span
+                      class="whitespace-nowrap text-sm text-white hover:text-white cursor-pointer"
+                    >
+                      {{ transaction.receipt }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-center">
+                    <span
+                      class="px-2 py-1 text-xs rounded-full"
+                      [ngClass]="getStatusClass(transaction.status)"
+                    >
+                      {{ transaction.status }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-center">
+                    <div *ngIf="transaction.status === 'success'">
+                      <span class="text-sm mr-2">
+                        {{
+                          getCheckedInQuantity(
+                            transaction,
+                            transaction.currentTicket._id
+                          )
+                        }}/{{ transaction.currentTicket.quantity || 1 }}
+                      </span>
+                      <button
+                        (click)="
+                          checkIn(transaction, transaction.currentTicket)
+                        "
+                        class="whitespace-nowrap px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm cursor-pointer"
+                      >
+                        Check
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- No results message -->
+                <tr
+                  *ngIf="filteredGroupedTransactions[ticketTitle].length === 0"
+                >
+                  <td colspan="8" class="py-8 text-center text-gray-400">
+                    No transactions found for this ticket type.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div
+            *ngIf="
+              filteredGroupedTransactions[ticketTitle].length > itemsPerPage
+            "
+            class="flex justify-between items-center mt-4"
+          >
+            <div>
+              <span class="text-sm text-gray-200">
+                Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
+                {{
+                  currentPage * itemsPerPage >
+                  filteredGroupedTransactions[ticketTitle].length
+                    ? filteredGroupedTransactions[ticketTitle].length
+                    : currentPage * itemsPerPage
+                }}
+                of {{ filteredGroupedTransactions[ticketTitle].length }} entries
+              </span>
+            </div>
+            <div class="flex space-x-2">
+              <button
+                class="px-4 py-2 bg-white text-black rounded-lg disabled:opacity-50 cursor-pointer"
+                [disabled]="currentPage === 1"
+                (click)="goToPreviousPage()"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="m15 19l-7-7l7-7"
+                  />
+                </svg>
+              </button>
+              <button
+                class="px-4 py-2 bg-white text-black rounded-lg disabled:opacity-50"
+                [disabled]="
+                  currentPage >=
+                  calculateTotalPages(
+                    filteredGroupedTransactions[ticketTitle].length,
+                    itemsPerPage
+                  )
+                "
+                (click)="
+                  goToNextPage(filteredGroupedTransactions[ticketTitle].length)
+                "
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="m8.25 4.5l7.5 7.5l-7.5 7.5"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Results Message -->
+    <div
+      *ngIf="transactions.length === 0"
+      class="bg-white/10 rounded-lg shadow-lg p-8 text-center border border-gray-700"
+    >
+      <div class="text-gray-200 text-lg mb-2">
+        No ticket purchases found for this event.
+      </div>
+      <div class="text-gray-400">
+        Once tickets are sold, they will appear here.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  *ngIf="showCheckInModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+>
+  <div
+    class="bg-black border border-gray-700 rounded-lg shadow-xl w-full max-w-lg overflow-hidden"
+  >
+    <!-- Modal Header -->
+    <div
+      class="border-b border-gray-700 px-6 py-4 flex justify-between items-center"
+    >
+      <h3 class="text-xl text-white font-semibold">Check-in Details</h3>
+      <button
+        (click)="closeCheckInModal()"
+        class="text-gray-400 hover:text-white focus:outline-none cursor-pointer"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+        >
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M18 6L6 18M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="px-6 py-4">
+      <div class="mb-4">
+        <p class="text-gray-200">
+          <span class="font-medium">Ticket:</span>
+          {{ selectedTransaction?.currentTicket?.title }}
+        </p>
+        <p class="text-gray-200">
+          <span class="font-medium">Buyer:</span>
+          {{ selectedTransaction?.userId?.name || "Anonymous" }}
+        </p>
+        <p class="text-gray-200">
+          <span class="font-medium">Total Quantity:</span>
+          {{ selectedTransaction?.currentTicket?.quantity || 1 }}
+        </p>
+      </div>
+
+      <!-- Check-in Status -->
+      <div class="mb-4">
+        <h4 class="text-white font-medium mb-2">Check-in Status</h4>
+        <div class="bg-white/10 rounded-lg p-3">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-gray-200">Checked In</span>
+            <span class="text-gray-200 font-medium">
+              {{
+                getCheckedInQuantity(
+                  selectedTransaction,
+                  selectedTransaction?.currentTicket?._id
+                )
+              }}/{{ selectedTransaction?.currentTicket?.quantity || 1 }}
+            </span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2.5">
+            <div
+              class="bg-green-600 h-2.5 rounded-full"
+              [style.width.%]="
+                (getCheckedInQuantity(
+                  selectedTransaction,
+                  selectedTransaction?.currentTicket?._id
+                ) /
+                  (selectedTransaction?.currentTicket?.quantity || 1)) *
+                100
+              "
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Check-in History -->
+      <div>
+        <h4 class="text-white font-medium mb-2">Check-in History</h4>
+        <div
+          *ngIf="
+            selectedTransaction?.checkIns &&
+            selectedTransaction.checkIns.length > 0
+          "
+          class="space-y-2"
+        >
+          <div
+            *ngFor="let checkIn of selectedTransaction.checkIns; let i = index"
+            class="bg-white/10 rounded-lg p-3 flex justify-between items-center"
+          >
+            <div>
+              <div class="text-gray-200">
+                <span class="font-medium">Session {{ i + 1 }}</span>
+              </div>
+              <div class="text-xs text-gray-400">
+                <span>{{
+                  checkIn.checkedInAt | date : "MMM d, y, h:mm a"
+                }}</span>
+              </div>
+            </div>
+            <div class="flex items-center">
+              <span class="text-gray-200 mr-2"
+                >Qty: {{ checkIn.quantity }}</span
+              >
+              <button
+                (click)="undoCheckIn(selectedTransaction, checkIn._id)"
+                class="px-2 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded text-xs"
+              >
+                Undo
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          *ngIf="
+            !selectedTransaction?.checkIns ||
+            selectedTransaction.checkIns.length === 0
+          "
+          class="text-center py-4 text-gray-400"
+        >
+          No check-ins recorded yet.
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="border-t border-gray-700 px-6 py-4 flex justify-end">
+      <div class="flex space-x-2">
+        <button
+          (click)="closeCheckInModal()"
+          class="text-sm px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 cursor-pointer"
+        >
+          Close
+        </button>
+        <button
+          *ngIf="
+            getCheckedInQuantity(
+              selectedTransaction,
+              selectedTransaction?.currentTicket?._id
+            ) < (selectedTransaction?.currentTicket?.quantity || 1)
+          "
+          (click)="openCheckInForm()"
+          class="whitespace-nowrap text-sm px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer"
+        >
+          Check In
+        </button>
+      </div>
+    </div>
+
+    <!-- Check-in Form Overlay -->
+    <div
+      *ngIf="showCheckInForm"
+      class="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-black border border-gray-700 rounded-lg p-6 w-full max-w-sm"
+      >
+        <h4 class="text-lg text-white font-medium mb-4">
+          Check In Tickets
+        </h4>
+
+        <div class="mb-4">
+          <label class="block text-gray-200 mb-2"
+            >Number of tickets to check in:</label
+          >
+          <div class="flex items-center">
+            <button
+              (click)="decreaseCheckInQuantity()"
+              class="px-3 py-1 bg-white text-black rounded-l-lg cursor-pointer"
+              [disabled]="checkInQuantity <= 1"
+            >
+              -
+            </button>
+            <input
+              type="number"
+              [(ngModel)]="checkInQuantity"
+              class="w-16 px-3 py-1 bg-white/20 text-center text-white border-y border-gray-700"
+              min="1"
+              [max]="getRemainingTickets()"
+            />
+            <button
+              (click)="increaseCheckInQuantity()"
+              class="px-3 py-1 bg-white text-black rounded-r-lg cursor-pointer"
+              [disabled]="checkInQuantity >= getRemainingTickets()"
+            >
+              +
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">
+            {{ getRemainingTickets() }} tickets remaining
+          </p>
+        </div>
+
+        <div class="flex justify-end space-x-2">
+          <button
+            (click)="cancelCheckInForm()"
+            class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            (click)="submitCheckIn()"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer"
+            [disabled]="
+              checkInQuantity < 1 || checkInQuantity > getRemainingTickets()
+            "
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Offline Booking Form -->
+<div
+  *ngIf="showCreateForm"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+>
+  <div
+    class="bg-black border border-gray-700 rounded-lg shadow-xl w-full max-w-4xl overflow-hidden my-4"
+  >
+    <!-- Modal Header -->
+    <div
+      class="border-b border-gray-700 px-6 py-4 flex justify-between items-center"
+    >
+      <h3 class="text-xl text-white font-semibold">
+        Create Offline Booking
+      </h3>
+      <button
+        (click)="showCreateForm = false"
+        class="text-gray-400 hover:text-white focus:outline-none cursor-pointer"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+        >
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M18 6L6 18M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="px-6 py-4 max-h-[80vh] overflow-y-auto">
+      <!-- Customer Information -->
+      <div class="mb-6">
+        <h3 class="text-lg font-medium text-white mb-3">
+          Customer Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-200 mb-1"
+              >Name <span class="text-red-500">*</span></label
+            >
+            <input
+              type="text"
+              [(ngModel)]="newBooking.customerInfo.name"
+              class="w-full mt-1 px-4 py-2 outline-none rounded-lg focus:ring-2 focus:ring-white bg-white/10 text-white"
+              placeholder="Customer name"
+              required="true"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-200 mb-1"
+              >Email <span class="text-red-500">*</span></label
+            >
+            <input
+              type="email"
+              [(ngModel)]="newBooking.customerInfo.email"
+              class="w-full mt-1 px-4 py-2 outline-none rounded-lg focus:ring-2 focus:ring-white bg-white/10 text-white"
+              placeholder="customer@example.com"
+              required="true"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-200 mb-1"
+              >Phone</label
+            >
+            <input
+              type="tel"
+              [(ngModel)]="newBooking.customerInfo.phone"
+              class="w-full mt-1 px-4 py-2 outline-none rounded-lg focus:ring-2 focus:ring-white bg-white/10 text-white"
+              placeholder="8888XXXXXX"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Tickets Selection -->
+      <div class="mb-6">
+        <h3 class="text-sm font-medium text-gray-200 mb-1">Tickets<span class="text-red-500">*</span></h3>
+        <div
+          *ngFor="let ticket of newBooking.tickets"
+          class="mb-4 p-4 border border-gray-700 rounded-lg bg-white/5"
+        >
+          <div class="flex justify-between items-center mb-2">
+            <div>
+              <h4 class="text-sm sm:text-base font-medium text-white">{{ ticket.title }}</h4>
+              <p class="text-sm sm:text-base text-gray-300">₹{{ ticket.price }} each</p>
+              <p *ngIf="ticket.maxQuantity <= 10" class="text-sm text-gray-400">
+                {{ ticket.maxQuantity }} available
+              </p>
+            </div>
+            <div class="flex items-center">
+              <button
+                (click)="decreaseQuantity(ticket)"
+                class="text-sm sm:text-base bg-blue-600/70 px-3 py-1 rounded-l text-white hover:bg-white/90 cursor-pointer"
+                [disabled]="ticket.quantity <= 0"
+              >
+                -
+              </button>
+              <span class="text-sm sm:text-base px-4 py-1 bg-white/10 text-white">{{
+                ticket.quantity
+              }}</span>
+              <button
+                (click)="increaseQuantity(ticket)"
+                class="bg-blue-600/70 px-3 py-1 rounded-r text-white hover:bg-white/90 cursor-pointer"
+                [disabled]="ticket.quantity >= ticket.maxQuantity"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div
+      class="border-t border-gray-700 px-6 py-4 flex justify-between items-center"
+    >
+      <div class="text-xl font-semibold text-white">
+        Total: ₹{{ getTotalAmount() }}
+      </div>
+      <div class="flex space-x-2">
+        <button
+          (click)="showCreateForm = false"
+          class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          (click)="createOfflineBooking()"
+          class="px-6 py-2 bg-white text-black rounded-lg hover:bg-white/70 transition cursor-pointer"
+          (disabled)="true"
+        >
+          Create Booking
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

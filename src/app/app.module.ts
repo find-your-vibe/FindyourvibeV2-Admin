@@ -18,6 +18,7 @@ import { UsersComponent } from './pages/users/users.component';
 import { EditEventComponent } from './pages/edit-event/edit-event.component';
 import { ToasterComponent } from './components/toaster/toaster.component';
 import { EmailComponent } from './pages/email/email.component';
+import { EventTransactionsComponent } from './pages/event-transactions/event-transactions.component';
 
 @NgModule({
   declarations: [
@@ -30,7 +31,8 @@ import { EmailComponent } from './pages/email/email.component';
     UsersComponent,
     EditEventComponent,
     ToasterComponent,
-    EmailComponent
+    EmailComponent,
+    EventTransactionsComponent
   ],
   imports: [
     BrowserModule,

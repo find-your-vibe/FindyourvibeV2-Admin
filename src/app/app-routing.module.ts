@@ -10,6 +10,7 @@ import { UsersComponent } from './pages/users/users.component';
 import { AppComponent } from './app.component';
 import { EditEventComponent } from './pages/edit-event/edit-event.component';
 import { EmailComponent } from './pages/email/email.component';
+import { EventTransactionsComponent } from './pages/event-transactions/event-transactions.component';
 
 const routes: Routes = [
   { path: '', component: EventsComponent, canActivate: [AdminGuard] },
@@ -20,6 +21,11 @@ const routes: Routes = [
   {path: 'transactions', component: TransactionsComponent, canActivate: [AdminGuard]},
   {path: 'users', component: UsersComponent, canActivate: [AdminGuard]},
   {path: 'events/:id', component: EditEventComponent, canActivate: [AdminGuard]},
+  { 
+    path: 'event-buyers/:eventid', 
+    component: EventTransactionsComponent, 
+    canActivate: [AdminGuard]
+  },
   {path: 'emails', component: EmailComponent, canActivate: [AdminGuard]},
 ];
 
