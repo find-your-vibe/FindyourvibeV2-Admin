@@ -51,6 +51,8 @@
         <thead class="bg-gray-100 dark:bg-gray-800">
           <tr>
             <th class="px-4 py-2 border-b dark:border-gray-700">Receipt ID</th>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Customer Name</th>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Customer EmailId</th>
             <th class="px-4 py-2 border-b dark:border-gray-700">Event</th>
             <th class="px-4 py-2 border-b dark:border-gray-700">Location</th>
             <th class="px-4 py-2 border-b dark:border-gray-700">Amount</th>
@@ -62,6 +64,8 @@
         <tbody>
           <tr *ngFor="let transaction of filteredTransactions" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.receipt }}</td>
+            <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.userId.username }}</td>
+            <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.userId.email }}</td>
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.eventId.title }}</td>
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.eventId.location }}</td>
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.totalAmount | currency:'INR' }}</td>

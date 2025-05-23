@@ -1,7 +1,5 @@
 <app-toaster></app-toaster>
-<div
-  class="px-4 max-w-7xl mx-auto mt-6 text-white min-h-[550px]"
->
+<div class="px-4 max-w-7xl mx-auto mt-6 text-white min-h-[550px]">
   <!-- Loading spinner -->
   <div *ngIf="loading" class="flex justify-center items-center h-64">
     <svg
@@ -98,9 +96,7 @@
         <div class="flex items-center space-x-2 mb-4">
           <span class="text-sm text-gray-200"
             >Total Tickets Sold:
-            <span class="text-white">{{
-              totalAllTicketsSold()
-            }}</span></span
+            <span class="text-white">{{ totalAllTicketsSold() }}</span></span
           >
           <span class="mx-2 text-gray-500">|</span>
           <span class="text-sm text-gray-200">
@@ -162,8 +158,7 @@
           title="Create Offline Booking"
         >
           +
-          <span
-            class="hidden md:inline-block text-sm ml-2"
+          <span class="hidden md:inline-block text-sm ml-2"
             >Create Offline Booking</span
           >
         </button>
@@ -251,6 +246,15 @@
                   </td> -->
                   <td class="py-3 px-4 text-gray-200">
                     <div *ngIf="transaction.currentTicket.dates">
+                      <div
+                        *ngIf="transaction.currentTicket.ticketDate && !transaction.currentTicket.dates[0]"
+                        class="text-sm whitespace-nowrap"
+                      >
+                        {{
+                          transaction.currentTicket.ticketDate
+                            | date : "MMM d, y"
+                        }}
+                      </div>
                       <div
                         *ngFor="
                           let dateRange of transaction.currentTicket.dates
@@ -572,9 +576,7 @@
       <div
         class="bg-black border border-gray-700 rounded-lg p-6 w-full max-w-sm"
       >
-        <h4 class="text-lg text-white font-medium mb-4">
-          Check In Tickets
-        </h4>
+        <h4 class="text-lg text-white font-medium mb-4">Check In Tickets</h4>
 
         <div class="mb-4">
           <label class="block text-gray-200 mb-2"
@@ -642,9 +644,7 @@
     <div
       class="border-b border-gray-700 px-6 py-4 flex justify-between items-center"
     >
-      <h3 class="text-xl text-white font-semibold">
-        Create Offline Booking
-      </h3>
+      <h3 class="text-xl text-white font-semibold">Create Offline Booking</h3>
       <button
         (click)="showCreateForm = false"
         class="text-gray-400 hover:text-white focus:outline-none cursor-pointer"
@@ -715,15 +715,21 @@
 
       <!-- Tickets Selection -->
       <div class="mb-6">
-        <h3 class="text-sm font-medium text-gray-200 mb-1">Tickets<span class="text-red-500">*</span></h3>
+        <h3 class="text-sm font-medium text-gray-200 mb-1">
+          Tickets<span class="text-red-500">*</span>
+        </h3>
         <div
           *ngFor="let ticket of newBooking.tickets"
           class="mb-4 p-4 border border-gray-700 rounded-lg bg-white/5"
         >
           <div class="flex justify-between items-center mb-2">
             <div>
-              <h4 class="text-sm sm:text-base font-medium text-white">{{ ticket.title }}</h4>
-              <p class="text-sm sm:text-base text-gray-300">₹{{ ticket.price }} each</p>
+              <h4 class="text-sm sm:text-base font-medium text-white">
+                {{ ticket.title }}
+              </h4>
+              <p class="text-sm sm:text-base text-gray-300">
+                ₹{{ ticket.price }} each
+              </p>
               <p *ngIf="ticket.maxQuantity <= 10" class="text-sm text-gray-400">
                 {{ ticket.maxQuantity }} available
               </p>
@@ -736,9 +742,10 @@
               >
                 -
               </button>
-              <span class="text-sm sm:text-base px-4 py-1 bg-white/10 text-white">{{
-                ticket.quantity
-              }}</span>
+              <span
+                class="text-sm sm:text-base px-4 py-1 bg-white/10 text-white"
+                >{{ ticket.quantity }}</span
+              >
               <button
                 (click)="increaseQuantity(ticket)"
                 class="bg-blue-600/70 px-3 py-1 rounded-r text-white hover:bg-white/90 cursor-pointer"
@@ -769,7 +776,7 @@
         <button
           (click)="createOfflineBooking()"
           class="px-6 py-2 bg-white text-black rounded-lg hover:bg-white/70 transition cursor-pointer"
-          (disabled)="true"
+          (disabled)="(true)"
         >
           Create Booking
         </button>

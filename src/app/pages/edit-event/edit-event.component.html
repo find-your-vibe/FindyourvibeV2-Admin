@@ -33,7 +33,9 @@
           Delete Event
         </button> -->
 
-        <a [routerLink]="['/event-buyers', event._id]"> 
+        <a
+        *ngIf="event.tickets.length > 0"
+        [routerLink]="['/event-buyers', event._id]"> 
           <button
             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
           >
