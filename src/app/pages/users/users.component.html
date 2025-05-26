@@ -1,33 +1,38 @@
-<div class="min-h-screen container mx-auto px-4 max-w-7xl py-6 dark:text-gray-100">
+<div
+  class="min-h-screen container mx-auto px-4 max-w-7xl py-6 dark:text-gray-100"
+>
   <h2 class="text-2xl font-semibold mb-6">Users Management</h2>
 
   <!-- Search and Filter -->
-  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+  <div
+    class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6"
+  >
     <div class="w-full md:w-1/2">
       <label class="block text-sm font-medium mb-1">Search Users</label>
       <div class="flex gap-2">
-        <input 
+        <input
           type="text"
           placeholder="Search users..."
           [(ngModel)]="searchQuery"
           (keyup.enter)="searchUsers()"
           class="block w-full p-2 text-sm text-gray-100 border border-gray-600 rounded-lg bg-gray-800 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
         />
-      <button 
-      (click)="searchUsers()" 
-      class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-    >
-      Search
-    </button>
+        <button
+          (click)="searchUsers()"
+          class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+        >
+          Search
+        </button>
       </div>
     </div>
 
     <div class="w-full md:w-auto">
       <label class="block text-sm font-medium mb-1">Users Per Page</label>
-      <select 
-        [(ngModel)]="itemsPerPage" 
-        (change)="loadUsers()" 
-        class="dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-md px-3 py-2 w-full md:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <select
+        [(ngModel)]="itemsPerPage"
+        (change)="loadUsers()"
+        class="dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-md px-3 py-2 w-full md:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
         <option value="5">5 per page</option>
         <option value="10">10 per page</option>
         <option value="20">20 per page</option>
@@ -38,43 +43,68 @@
 
   <!-- Loader -->
   <div *ngIf="isLoading" class="text-center my-8">
-    <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500"></div>
+    <div
+      class="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500"
+    ></div>
   </div>
 
   <!-- Table -->
   <div *ngIf="!isLoading">
     <div class="overflow-x-auto">
-      <table class="min-w-full dark:bg-gray-900 dark:border-gray-700 border border-gray-200 rounded-lg shadow-sm">
-        <thead class="dark:bg-gray-800 dark:text-gray-100 text-sm font-semibold">
+      <table
+        class="min-w-full dark:bg-gray-900 dark:border-gray-700 border border-gray-200 rounded-lg shadow-sm"
+      >
+        <thead
+          class="dark:bg-gray-800 dark:text-gray-100 text-sm font-semibold"
+        >
           <tr>
-            <th class="text-left px-4 py-2 border-b dark:border-gray-700">Name</th>
-            <th class="text-left px-4 py-2 border-b dark:border-gray-700">Email</th>
-            <th class="text-left px-4 py-2 border-b dark:border-gray-700">Phone</th>
-            <th class="text-left px-4 py-2 border-b dark:border-gray-700">Role</th>
-            <th class="text-left px-4 py-2 border-b dark:border-gray-700">Joined</th>
-            <th class="text-left px-4 py-2 border-b dark:border-gray-700">Actions</th>
+            <th class="text-left px-4 py-2 border-b dark:border-gray-700">
+              Name
+            </th>
+            <th class="text-left px-4 py-2 border-b dark:border-gray-700">
+              Email
+            </th>
+            <th class="text-left px-4 py-2 border-b dark:border-gray-700">
+              Phone
+            </th>
+            <th class="text-left px-4 py-2 border-b dark:border-gray-700">
+              Role
+            </th>
+            <th class="text-left px-4 py-2 border-b dark:border-gray-700">
+              Joined
+            </th>
+            <th class="text-left px-4 py-2 border-b dark:border-gray-700">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of users" class="border-t dark:border-gray-700 dark:hover:bg-gray-800">
+          <tr
+            *ngFor="let user of users"
+            class="border-t dark:border-gray-700 dark:hover:bg-gray-800"
+          >
             <td class="px-4 py-2">{{ user.name }}</td>
             <td class="px-4 py-2">{{ user.email }}</td>
-            <td class="px-4 py-2">{{ user.phone || 'N/A' }}</td>
+            <td class="px-4 py-2">{{ user.phone || "N/A" }}</td>
             <td class="px-4 py-2">
-              <select 
-                [(ngModel)]="user.role" 
-                (change)="onRoleChange(user, $event)" 
-                class="dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+              <select
+                [(ngModel)]="user.role"
+                (change)="onRoleChange(user, $event)"
+                class="dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
                 <option value="organizer">Organizer</option>
               </select>
             </td>
-            <td class="px-4 py-2">{{ user.createdAt | date:'mediumDate' }}</td>
             <td class="px-4 py-2">
-              <button 
-                (click)="deleteUser(user._id!)" 
-                class="text-red-400 hover:text-red-500 font-medium text-sm flex items-center gap-1">
+              {{ user.createdAt | date : "mediumDate" }}
+            </td>
+            <td class="px-4 py-2">
+              <button
+                (click)="deleteUser(user._id!)"
+                class="text-red-400 hover:text-red-500 font-medium text-sm flex items-center gap-1"
+              >
                 <i class="bi bi-trash"></i> Delete
               </button>
             </td>
@@ -90,17 +120,20 @@
 
     <!-- Pagination -->
     <div *ngIf="totalPages > 1" class="mt-6 flex justify-center">
-      <nav class="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-        <button 
-          [disabled]="currentPage === 1" 
+      <nav
+        class="inline-flex rounded-md shadow-sm -space-x-px"
+        aria-label="Pagination"
+      >
+        <button
+          [disabled]="currentPage === 1"
           (click)="changePage(currentPage - 1)"
           class="px-3 py-2 dark:bg-gray-900 dark:border-gray-700 border text-sm font-medium hover:dark:bg-gray-800 rounded-l-md"
         >
           Previous
         </button>
 
-        <button 
-          *ngFor="let page of getPageNumbers()" 
+        <button
+          *ngFor="let page of getPageNumbers()"
           (click)="changePage(page)"
           [ngClass]="{
             'dark:bg-blue-500 dark:text-white': page === currentPage,
@@ -111,8 +144,8 @@
           {{ page }}
         </button>
 
-        <button 
-          [disabled]="currentPage === totalPages" 
+        <button
+          [disabled]="currentPage === totalPages"
           (click)="changePage(currentPage + 1)"
           class="px-3 py-2 dark:bg-gray-900 dark:border-gray-700 border text-sm font-medium hover:dark:bg-gray-800 rounded-r-md"
         >
@@ -123,8 +156,9 @@
 
     <!-- Page Summary -->
     <div class="text-center dark:text-gray-400 text-sm mt-3">
-      Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to 
-      {{ getMinValue(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }} users
+      Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
+      {{ getMinValue(currentPage * itemsPerPage, totalItems) }} of
+      {{ totalItems }} users
     </div>
   </div>
 </div>
