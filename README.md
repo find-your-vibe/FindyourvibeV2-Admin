@@ -42,7 +42,7 @@ To create a production build, run:
 ```bash
 ng build
 ```
-The optimized files will be available in the `build` directory.
+The optimized files will be available in the `build` directory
 
 ### Folder Structure
 
