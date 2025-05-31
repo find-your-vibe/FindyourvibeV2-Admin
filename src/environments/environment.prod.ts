@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl:{
+  apiUrl: {
     auth: 'https://api.auth.findyourvibe.in',
     event: 'https://api.event.findyourvibe.in',
     user: 'https://api.user.findyourvibe.in',
@@ -9,6 +9,7 @@ export const environment = {
     content: 'https://api.content.findyourvibe.in',
     offer: 'https://api.offers.findyourvibe.in',
     onlinePayment: 'https://api.online.findyourvibe.in',
+    offlineBooking: 'https://api.offline.findyourvibe.in',
     email: 'https://api.email.findyourvibe.in',
-},
+  },
 };

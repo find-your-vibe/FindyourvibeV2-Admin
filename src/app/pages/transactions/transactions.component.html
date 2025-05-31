@@ -53,6 +53,7 @@
             <th class="px-4 py-2 border-b dark:border-gray-700">Receipt ID</th>
             <th class="px-4 py-2 border-b dark:border-gray-700">Customer Name</th>
             <th class="px-4 py-2 border-b dark:border-gray-700">Customer EmailId</th>
+            <th class="px-4 py-2 border-b dark:border-gray-700">Customer Phone no.</th>
             <th class="px-4 py-2 border-b dark:border-gray-700">Event</th>
             <th class="px-4 py-2 border-b dark:border-gray-700">Location</th>
             <th class="px-4 py-2 border-b dark:border-gray-700">Amount</th>
@@ -66,6 +67,7 @@
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.receipt }}</td>
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.userId.username }}</td>
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.userId.email }}</td>
+            <td class="px-4 py-2 border-b dark:border-gray-700">{{!transaction.userId.phone ||  transaction.userId.phone.includes("@") ? "N/A" : transaction.userId.phone}}</td>
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.eventId.title }}</td>
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.eventId.location }}</td>
             <td class="px-4 py-2 border-b dark:border-gray-700">{{ transaction.totalAmount | currency:'INR' }}</td>

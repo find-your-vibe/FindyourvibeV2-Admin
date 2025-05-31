@@ -34,6 +34,7 @@ export interface Transaction {
     _id: string;
     username: string;
     email: string;
+    phone: string;
   };
   __v?: number;
 }

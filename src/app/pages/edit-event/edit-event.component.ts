@@ -217,24 +217,24 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
         url: [''],
         public_id: ['']
       }),
-      priceType: [''],
+      priceType: ['Paid', Validators.required],
       paidType: [null],
       startTime: this.fb.array([this.fb.control('', Validators.required)]),
-    endTime: this.fb.array([this.fb.control('', Validators.required)]),
-    date: this.fb.group({
-      dateType: ['single'],
-      date: [null], // Initialize as null instead of empty string
-      endDate: [null],
-      recurranceDay: [null]
-    }),
-      type: ['', Validators.required],
-      price: [''],
-      language: [[]],
-      status: ['active'],
-      adultsOnly: [false],
-      tickets: this.fb.array([]),
-      tnc: this.fb.array([]),
-    });
+      endTime: this.fb.array([this.fb.control('', Validators.required)]),
+      date: this.fb.group({
+        dateType: ['single'],
+        date: [null], // Initialize as null instead of empty string
+        endDate: [null],
+        recurranceDay: [null]
+      }),
+        type: ['', Validators.required],
+        price: [''],
+        language: [[]],
+        status: ['active'],
+        adultsOnly: [false],
+        tickets: this.fb.array([]),
+        tnc: this.fb.array([]),
+      });
 
 
     this.eventForm.get('date.dateType')?.valueChanges.subscribe((dateType) => {
@@ -411,20 +411,21 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
     this.endTimes.push(this.fb.control(time, Validators.required));
   }
   
-  addTicket(ticket: EventTicket = this.getEmptyTicket()): void {
-    const ticketGroup = this.fb.group({
-      title: [ticket.title, Validators.required],
-      price: [ticket.price, [Validators.required, Validators.min(0)]],
-      description: [ticket.description],
-      seats: [ticket.seats, [Validators.required, Validators.min(1)]],
-      seatsLeft: [ticket.seatsLeft, Validators.min(0)],
-      occupancy: [ticket.occupancy],
-      ticketDate: [ticket.ticketDate],
-      _id: [ticket._id || null]
-    });
-  
-    // Add the group to the array
+  addTicket(ticket?: EventTicket): void {
+    const ticketGroup = this.getEmptyTicket();
+    if (ticket) {
+      ticketGroup.patchValue(ticket);
+    }
     this.ticketsArray.push(ticketGroup);
+  }
+
+  canAddTicket(): boolean {
+    // Check if last ticket is valid before adding new one
+    if (this.ticketsArray.length > 0) {
+      const lastTicket = this.ticketsArray.at(this.ticketsArray.length - 1);
+      return lastTicket.valid;
+    }
+    return true;
   }
   
   addTnC(tnc: any = { heading: '', text: '' }): void {
@@ -435,17 +436,18 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
   }
   
   // Helper methods
-  getEmptyTicket(): EventTicket {
-    return {
-      title: '',
-      occupancy: 1,
-      seats: 1,
-      description: '',
-      seatsLeft: 1,
-      price: 0,
-      ticketDate: null
-    };
-  }
+  getEmptyTicket(): FormGroup {
+  return this.fb.group({
+    title: ['', Validators.required],
+    price: [0, [Validators.required, Validators.min(0)]],
+    description: [''],
+    seats: [1], // Changed from min(1) validation
+    seatsLeft: [1], // Added required validator
+    occupancy: [1, [Validators.required, Validators.min(1)]], // Added required validator
+    ticketDate: [null],
+    _id: [null] // For existing tickets
+  });
+}
   
   // Remove methods for form arrays
   removeStartTime(index: number): void {
@@ -479,6 +481,11 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
 
   saveChanges(): void {
     if (!this.event._id) return;
+    console.log(this.eventForm.value);
+    
+    if (!this.eventForm.value.priceType) {
+    this.eventForm.patchValue({ priceType: 'Paid' });
+  }
   
     // Clean the date object based on dateType
     const dateType = this.eventForm.get('date.dateType')?.value;

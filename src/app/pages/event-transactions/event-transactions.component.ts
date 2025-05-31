@@ -25,13 +25,14 @@ export class EventTransactionsComponent implements OnInit {
     customerInfo: {
       name: '',
       email: '',
-      phone: ''
-    }
+      phone: '',
+    },
   };
 
   // Pagination
   currentPage: number = 1;
   itemsPerPage: number = 5;
+  ticketPages: { [key: string]: number } = {};
 
   // Filter options
   filterStatus: string = 'all';
@@ -51,7 +52,7 @@ export class EventTransactionsComponent implements OnInit {
     @Inject(TicketService) private transactionService: TicketService,
     private authService: AuthService,
     private checkInService: CheckInService,
-    private router: Router,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -80,7 +81,13 @@ export class EventTransactionsComponent implements OnInit {
         if (response.success) {
           this.transactions = response.data;
           this.processTransactions();
-          this.applyFilters(); // Apply initial filters
+          this.applyFilters();
+
+          // Initialize pagination for each ticket type
+          this.getTicketTypes().forEach((ticketType) => {
+            this.ticketPages[ticketType] = 1;
+          });
+
           this.loading = false;
         }
       },
@@ -92,30 +99,59 @@ export class EventTransactionsComponent implements OnInit {
   }
 
   applyFilters(): void {
-    // First get filtered transactions
+    // First, get all filtered transactions based on search and status
     const filteredTransactions = this.getFilteredTransactions();
 
-    // Then group them
-    this.groupTransactions(filteredTransactions);
+    // Reset the filtered grouped transactions
+    this.filteredGroupedTransactions = {};
+
+    // Group all transactions by ticket type, regardless of current filter
+    filteredTransactions.forEach((transaction) => {
+      if (transaction.tickets && transaction.tickets.length > 0) {
+        transaction.tickets.forEach((ticket: any) => {
+          if (!this.filteredGroupedTransactions[ticket.title]) {
+            this.filteredGroupedTransactions[ticket.title] = [];
+          }
+
+          this.filteredGroupedTransactions[ticket.title].push({
+            ...transaction,
+            currentTicket: ticket,
+          });
+        });
+      }
+    });
+
+    // Initialize pagination for each ticket type
+    this.getTicketTypes().forEach((ticketType) => {
+      if (!this.ticketPages[ticketType]) {
+        this.ticketPages[ticketType] = 1;
+      }
+    });
   }
 
   prepareNewBookingTickets(): void {
     if (this.eventDetails && this.eventDetails.tickets) {
-      this.newBooking.tickets = this.eventDetails.tickets.map((ticket: any) => ({
-        title: ticket.title,
-        price: ticket.price,
-        quantity: 0,
-        ticketId: ticket._id,
-        maxQuantity: ticket.seatsLeft > 0 ? ticket.seatsLeft : Infinity // Arbitrary high number for unlimited
-      }));
+      this.newBooking.tickets = this.eventDetails.tickets.map(
+        (ticket: any) => ({
+          title: ticket.title,
+          price: ticket.price,
+          quantity: 0,
+          ticketId: ticket._id,
+          seats: ticket.seats, // Add this line
+          seatsLeft: ticket.seatsLeft, // Add this line
+          maxQuantity: ticket.seatsLeft > 0 ? ticket.seatsLeft : Infinity, // Arbitrary high number for unlimited
+        })
+      );
     }
   }
 
   createOfflineBooking(): void {
     // Filter out tickets with quantity 0
     this.isCreatingBooking = true;
-    const validTickets = this.newBooking.tickets.filter((t: any) => t.quantity > 0);
-    
+    const validTickets = this.newBooking.tickets.filter(
+      (t: any) => t.quantity > 0
+    );
+
     if (validTickets.length === 0) {
       this.toaster.showToast('error', 'Please select at least one ticket');
       return;
@@ -130,26 +166,34 @@ export class EventTransactionsComponent implements OnInit {
       return;
     }
 
-    this.checkInService.createOfflineBooking(
-      this.eventId,
-      validTickets,
-      this.newBooking.customerInfo
-    ).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.toaster.showToast('success', 'Offline booking created successfully');
-          this.resetNewBookingForm();
-          this.showCreateForm = false;
+    this.checkInService
+      .createOfflineBooking(
+        this.eventId,
+        validTickets,
+        this.newBooking.customerInfo
+      )
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.toaster.showToast(
+              'success',
+              'Offline booking created successfully'
+            );
+            this.resetNewBookingForm();
+            this.showCreateForm = false;
+            this.isCreatingBooking = false;
+            this.loadTransactions(); // Reload transactions to reflect the new booking
+            this.searchQuery = ''; // Reset search query
+          }
+        },
+        error: (error) => {
+          this.toaster.showToast(
+            'error',
+            error.error?.message || 'Failed to create offline booking'
+          );
           this.isCreatingBooking = false;
-          this.loadTransactions(); // Reload transactions to reflect the new booking
-          this.searchQuery = ''; // Reset search query
-        }
-      },
-      error: (error) => {
-        this.toaster.showToast('error', error.error?.message || 'Failed to create offline booking');
-        this.isCreatingBooking = false;
-      }
-    });
+        },
+      });
   }
 
   resetNewBookingForm(): void {
@@ -159,13 +203,15 @@ export class EventTransactionsComponent implements OnInit {
         price: ticket.price,
         quantity: 0,
         ticketId: ticket._id,
-        maxQuantity: ticket.seatsLeft > 0 ? ticket.seatsLeft : 100
+        seats: ticket.seats, // Add this line
+        seatsLeft: ticket.seatsLeft,
+        maxQuantity: ticket.seatsLeft > 0 ? ticket.seatsLeft : 100,
       })),
       customerInfo: {
         name: '',
         email: '',
-        phone: ''
-      }
+        phone: '',
+      },
     };
   }
 
@@ -183,7 +229,7 @@ export class EventTransactionsComponent implements OnInit {
 
   getTotalAmount(): number {
     return this.newBooking.tickets.reduce((sum: number, ticket: any) => {
-      return sum + (ticket.price * ticket.quantity);
+      return sum + ticket.price * ticket.quantity;
     }, 0);
   }
 
@@ -225,23 +271,51 @@ export class EventTransactionsComponent implements OnInit {
     this.transactions.forEach((transaction) => {
       if (transaction.tickets && transaction.tickets.length > 0) {
         transaction.tickets.forEach((ticket: any) => {
-          // Make sure each ticket has its individual price
-          if (!ticket.price && this.eventDetails && this.eventDetails.tickets) {
+          // Copy price if missing
+          if (!ticket.price && this.eventDetails?.tickets) {
             const eventTicket = this.eventDetails.tickets.find(
-              (t: any) => t.title === ticket.title
+              (t: any) => t._id === ticket.ticketId || t.title === ticket.title
             );
-            if (eventTicket) {
-              ticket.price = eventTicket.price;
-            }
+            if (eventTicket) ticket.price = eventTicket.price;
           }
 
-          // Make sure dates are set correctly
-          if (!ticket.dates && this.eventDetails && this.eventDetails.tickets) {
-            const eventTicket = this.eventDetails.tickets.find(
-              (t: any) => t.title === ticket.title
-            );
-            if (eventTicket && eventTicket.dates) {
-              ticket.dates = eventTicket.dates;
+          // Handle dates - prioritize transaction ticketDate first
+          if (!ticket.dates) {
+            if (ticket.ticketDate) {
+              // Use the ticketDate from the transaction if available
+              ticket.dates = [[new Date(ticket.ticketDate)]];
+            } else if (this.eventDetails?.tickets) {
+              const eventTicket = this.eventDetails.tickets.find(
+                (t: any) =>
+                  t._id === ticket.ticketId || t.title === ticket.title
+              );
+
+              if (eventTicket) {
+                if (eventTicket.dates) {
+                  ticket.dates = eventTicket.dates;
+                } else if (eventTicket.ticketDate) {
+                  ticket.dates = [[eventTicket.ticketDate]];
+                } else if (this.eventDetails.date) {
+                  // Fall back to event dates
+                  if (
+                    this.eventDetails.date.dateType === 'single' &&
+                    this.eventDetails.date.date
+                  ) {
+                    ticket.dates = [[new Date(this.eventDetails.date.date)]];
+                  } else if (
+                    this.eventDetails.date.dateType === 'multiple' &&
+                    this.eventDetails.date.date &&
+                    this.eventDetails.date.endDate
+                  ) {
+                    ticket.dates = [
+                      [
+                        new Date(this.eventDetails.date.date),
+                        new Date(this.eventDetails.date.endDate),
+                      ],
+                    ];
+                  }
+                }
+              }
             }
           }
         });
@@ -312,23 +386,24 @@ export class EventTransactionsComponent implements OnInit {
   }
 
   // Get paginated data
-  getPaginatedData(data: any[]): any[] {
-    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+  getPaginatedData(data: any[], ticketType: string): any[] {
+    const currentPage = this.ticketPages[ticketType] || 1;
+    const startIndex = (currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
     return data.slice(startIndex, endIndex);
   }
 
   // Pagination controls
-  goToPreviousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
+  goToPreviousPage(ticketType: string): void {
+    if (this.ticketPages[ticketType] > 1) {
+      this.ticketPages[ticketType]--;
     }
   }
 
-  goToNextPage(totalItems: number): void {
+  goToNextPage(ticketType: string, totalItems: number): void {
     const totalPages = Math.ceil(totalItems / this.itemsPerPage);
-    if (this.currentPage < totalPages) {
-      this.currentPage++;
+    if (this.ticketPages[ticketType] < totalPages) {
+      this.ticketPages[ticketType]++;
     }
   }
 
@@ -356,20 +431,43 @@ export class EventTransactionsComponent implements OnInit {
   }
 
   totalQuantityOfTicketSold(ticketTitle: string): number {
+    if (!this.filteredGroupedTransactions[ticketTitle]) return 0;
+
+    return this.filteredGroupedTransactions[ticketTitle].reduce(
+      (total: number, transaction: any) => {
+        return total + (transaction.currentTicket.quantity || 1);
+      },
+      0
+    );
+  }
+
+  // This sums all ticket quantities across all ticket types
+  totalAllTicketsSold(): number {
     let total = 0;
-    if (this.groupedTransactions[ticketTitle]) {
-      this.groupedTransactions[ticketTitle].forEach((transaction: any) => {
-        total += transaction.currentTicket.quantity || 1;
-      });
+    for (const ticketTitle in this.filteredGroupedTransactions) {
+      total += this.totalQuantityOfTicketSold(ticketTitle);
     }
     return total;
   }
 
-  // Add this new function to calculate total tickets across all types
-  totalAllTicketsSold(): number {
+  // This counts the number of transactions (purchases)
+  countTicketPurchases(ticketTitle: string): number {
+    return this.filteredGroupedTransactions[ticketTitle]?.length || 0;
+  }
+
+  // This counts total number of transactions across all ticket types
+  totalAllPurchases(): number {
     let total = 0;
-    for (const ticketTitle in this.groupedTransactions) {
-      total += this.totalQuantityOfTicketSold(ticketTitle);
+    for (const ticketTitle in this.filteredGroupedTransactions) {
+      total += this.countTicketPurchases(ticketTitle);
+    }
+    return total;
+  }
+
+  totalAllBuyers(): number {
+    let total = 0;
+    for (const ticketTitle in this.filteredGroupedTransactions) {
+      total += this.filteredGroupedTransactions[ticketTitle].length;
     }
     return total;
   }
@@ -497,16 +595,22 @@ export class EventTransactionsComponent implements OnInit {
 
   totalCheckedInCount(): number {
     let totalCheckedIn = 0;
+    const processedTransactionIds = new Set<string>();
 
-    // Loop through all ticket types
-    for (const ticketTitle in this.groupedTransactions) {
+    // Loop through all ticket types in filtered transactions
+    for (const ticketTitle in this.filteredGroupedTransactions) {
       // Loop through transactions for this ticket type
-      this.groupedTransactions[ticketTitle].forEach((transaction: any) => {
-        if (transaction.checkIns && transaction.checkIns.length > 0) {
-          // Sum up the quantity of all check-ins for this transaction
-          transaction.checkIns.forEach((checkIn: any) => {
-            totalCheckedIn += checkIn.quantity || 1;
-          });
+      this.filteredGroupedTransactions[ticketTitle].forEach((transaction: any) => {
+        // Only process each transaction once (avoid duplicates)
+        if (!processedTransactionIds.has(transaction._id)) {
+          processedTransactionIds.add(transaction._id);
+          
+          if (transaction.checkIns && transaction.checkIns.length > 0) {
+            // Sum up the quantity of all check-ins for this transaction
+            totalCheckedIn += transaction.checkIns.reduce((sum: number, checkIn: any) => {
+              return sum + (checkIn.quantity || 1);
+            }, 0);
+          }
         }
       });
     }
@@ -517,6 +621,26 @@ export class EventTransactionsComponent implements OnInit {
   navigateToOfflineCheckin(): void {
     this.router.navigate(['/organizer/offline-checkin', this.eventId]);
     console.log('Navigating to offline check-in');
-    
+  }
+
+  calculateTotalRevenue(): number {
+    let totalRevenue = 0;
+
+    // Loop through all transactions
+    for (const transaction of this.transactions) {
+      // Only count successful transactions
+      if (transaction.status === 'success') {
+        // Sum up the totalAmount for each transaction
+        totalRevenue += transaction.totalAmount || 0;
+      }
+    }
+
+    return totalRevenue;
+  }
+
+  refreshTransactions(): void {
+    this.loading = true;
+    this.loadTransactions();
+    this.toaster.showToast('info', 'Transactions refreshed successfully');
   }
 }
