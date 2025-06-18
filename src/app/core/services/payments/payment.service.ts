@@ -11,11 +11,17 @@ export interface Coordinates {
 
 export interface Ticket {
   title: string;
-  ticketId: string;
-  type: string;
-  price: number;
+  occupancy: number;
+  seats: number;
+  description: string;
+  _id?: string;
+  seatsLeft: number;
   quantity: number;
-  ticketDate?: Date | null;
+  price: number;
+  originalPrice?: number;
+  discountPercentage?: number;
+  discountedPrice?: number;
+  ticketDate: Date | null;
 }
 
 export interface Transaction {

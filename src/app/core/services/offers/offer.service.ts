@@ -25,7 +25,8 @@ export interface Offer {
     url: string;
     public_id: string;
   }[];
-  date: Date;
+  startDate: Date;
+  endDate: Date;
   postedBy: string | null;
   status: 'pending' | 'active' | 'inactive';
   likedBy?: string[];
