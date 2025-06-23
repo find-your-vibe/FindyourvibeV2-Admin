@@ -30,11 +30,12 @@ private apiUrl = environment.apiUrl.offlineBooking;
   }
 
   // Offline Booking Methods
-  createOfflineBooking(eventId: string, tickets: any[], customerInfo: any): Observable<any> {
+  createOfflineBooking(eventId: string, tickets: any[], customerInfo: any, isOfflinePricing:boolean): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/admin-create`, {
       eventId,
       tickets,
-      customerInfo
+      customerInfo,
+      isOfflinePricing
     });
   }
 

@@ -27,6 +27,7 @@ export class EventTransactionsComponent implements OnInit {
       email: '',
       phone: '',
     },
+    useOfflinePricing: false,
   };
 
   // Pagination
@@ -45,6 +46,9 @@ export class EventTransactionsComponent implements OnInit {
   showCheckInForm: boolean = false;
   checkInQuantity: number = 1;
   isCreatingBooking: boolean = false;
+
+  isEditingOfflineTickets: boolean = false;
+  editableTickets: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -130,90 +134,131 @@ export class EventTransactionsComponent implements OnInit {
   }
 
   prepareNewBookingTickets(): void {
-    if (this.eventDetails && this.eventDetails.tickets) {
-      this.newBooking.tickets = this.eventDetails.tickets.map(
-        (ticket: any) => ({
-          title: ticket.title,
-          price: ticket.price,
-          quantity: 0,
-          ticketId: ticket._id,
-          seats: ticket.seats, // Add this line
-          seatsLeft: ticket.seatsLeft, // Add this line
-          maxQuantity: ticket.seatsLeft > 0 ? ticket.seatsLeft : Infinity, // Arbitrary high number for unlimited
-        })
-      );
-    }
-  }
-
-  createOfflineBooking(): void {
-    // Filter out tickets with quantity 0
-    this.isCreatingBooking = true;
-    const validTickets = this.newBooking.tickets.filter(
-      (t: any) => t.quantity > 0
-    );
-
-    if (validTickets.length === 0) {
-      this.toaster.showToast('error', 'Please select at least one ticket');
-      return;
-    }
-
-    if (!this.newBooking.customerInfo.name) {
-      this.toaster.showToast('error', 'Customer name is required');
-      return;
-    }
-    if (!this.newBooking.customerInfo.email) {
-      this.toaster.showToast('error', 'Customer email is required');
-      return;
-    }
-
-    this.checkInService
-      .createOfflineBooking(
-        this.eventId,
-        validTickets,
-        this.newBooking.customerInfo
-      )
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.toaster.showToast(
-              'success',
-              'Offline booking created successfully'
-            );
-            this.resetNewBookingForm();
-            this.showCreateForm = false;
-            this.isCreatingBooking = false;
-            this.loadTransactions(); // Reload transactions to reflect the new booking
-            this.searchQuery = ''; // Reset search query
-          }
-        },
-        error: (error) => {
-          this.toaster.showToast(
-            'error',
-            error.error?.message || 'Failed to create offline booking'
-          );
-          this.isCreatingBooking = false;
-        },
-      });
-  }
-
-  resetNewBookingForm(): void {
-    this.newBooking = {
-      tickets: this.eventDetails.tickets.map((ticket: any) => ({
+  if (this.eventDetails && this.eventDetails.tickets) {
+    this.newBooking.tickets = this.eventDetails.tickets.map(
+      (ticket: any) => ({
         title: ticket.title,
         price: ticket.price,
+        offlinePrice: ticket.offlinePrice || ticket.price,
         quantity: 0,
         ticketId: ticket._id,
-        seats: ticket.seats, // Add this line
-        seatsLeft: ticket.seatsLeft,
-        maxQuantity: ticket.seatsLeft > 0 ? ticket.seatsLeft : 100,
-      })),
-      customerInfo: {
-        name: '',
-        email: '',
-        phone: '',
-      },
-    };
+        maxQuantity: ticket.seatsLeft > 0 ? ticket.seatsLeft : Infinity,
+      })
+    );
+    // Initialize editable tickets
+    this.editableTickets = JSON.parse(
+      JSON.stringify(this.newBooking.tickets)
+    );
   }
+}
+
+toggleOfflinePricing(): void {
+  if (this.newBooking.useOfflinePricing) {
+    // When enabling offline pricing, make a copy of the original tickets
+    this.editableTickets = JSON.parse(
+      JSON.stringify(this.newBooking.tickets)
+    );
+  } else {
+    // When disabling, reset to original prices
+    this.newBooking.tickets.forEach((ticket: any) => {
+      const original = this.eventDetails.tickets.find(
+        (t: any) => t._id === ticket.ticketId
+      );
+      if (original) {
+        ticket.offlinePrice = original.offlinePrice || original.price;
+      }
+    });
+  }
+}
+
+applyTicketChanges(index: number): void {
+  if (this.editableTickets[index]) {
+    this.newBooking.tickets[index].title = this.editableTickets[index].title;
+    this.newBooking.tickets[index].offlinePrice =
+      this.editableTickets[index].offlinePrice;
+  }
+  this.toaster.showToast('success', 'Ticket changes applied');
+}
+
+  createOfflineBooking(): void {
+  this.isCreatingBooking = true;
+  const validTickets = this.newBooking.tickets
+    .filter((t: any) => t.quantity > 0)
+    .map((ticket: any) => ({
+      ...ticket,
+      // Use offline price if enabled, otherwise use regular price
+      price: this.newBooking.useOfflinePricing
+        ? ticket.offlinePrice
+        : ticket.price,
+    }));
+
+  if (validTickets.length === 0) {
+    this.toaster.showToast('error', 'Please select at least one ticket');
+    this.isCreatingBooking = false;
+    return;
+  }
+
+  if (!this.newBooking.customerInfo.name) {
+    this.toaster.showToast('error', 'Customer name is required');
+    this.isCreatingBooking = false;
+    return;
+  }
+  if (!this.newBooking.customerInfo.email) {
+    this.toaster.showToast('error', 'Customer email is required');
+    this.isCreatingBooking = false;
+    return;
+  }
+
+  this.checkInService
+    .createOfflineBooking(
+      this.eventId,
+      validTickets,
+      this.newBooking.customerInfo,
+      this.newBooking.useOfflinePricing // Pass the offline pricing flag
+    )
+    .subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toaster.showToast(
+            'success',
+            'Offline booking created successfully'
+          );
+          this.resetNewBookingForm();
+          this.showCreateForm = false;
+          this.isCreatingBooking = false;
+          this.loadTransactions();
+          this.searchQuery = '';
+        }
+      },
+      error: (error) => {
+        this.toaster.showToast(
+          'error',
+          error.error?.message || 'Failed to create offline booking'
+        );
+        this.isCreatingBooking = false;
+      },
+    });
+}
+
+  resetNewBookingForm(): void {
+  this.newBooking = {
+    tickets: this.eventDetails.tickets.map((ticket: any) => ({
+      title: ticket.title,
+      price: ticket.price,
+      offlinePrice: ticket.offlinePrice || ticket.price, // Include offline price
+      quantity: 0,
+      ticketId: ticket._id,
+      maxQuantity: ticket.seatsLeft > 0 ? ticket.seatsLeft : 100,
+    })),
+    customerInfo: {
+      name: '',
+      email: '',
+      phone: '',
+    },
+    useOfflinePricing: false, // Reset this flag
+  };
+}
+
 
   increaseQuantity(ticket: any): void {
     if (ticket.quantity < ticket.maxQuantity) {
@@ -228,10 +273,14 @@ export class EventTransactionsComponent implements OnInit {
   }
 
   getTotalAmount(): number {
-    return this.newBooking.tickets.reduce((sum: number, ticket: any) => {
-      return sum + ticket.price * ticket.quantity;
-    }, 0);
-  }
+  return this.newBooking.tickets.reduce((sum: number, ticket: any) => {
+    const price =
+      this.newBooking.useOfflinePricing && ticket.offlinePrice
+        ? ticket.offlinePrice
+        : ticket.price;
+    return sum + price * ticket.quantity;
+  }, 0);
+}
 
   // Update the grouping method
   groupTransactions(transactions: any[]): void {
@@ -271,6 +320,13 @@ export class EventTransactionsComponent implements OnInit {
     this.transactions.forEach((transaction) => {
       if (transaction.tickets && transaction.tickets.length > 0) {
         transaction.tickets.forEach((ticket: any) => {
+          if (transaction.transactionType === 'offline') {
+            transaction.tickets.forEach((ticket: any) => {
+              if (!ticket.price) {
+                ticket.price = ticket.offlinePrice || ticket.price;
+              }
+            });
+          }
           // Copy price if missing
           if (!ticket.price && this.eventDetails?.tickets) {
             const eventTicket = this.eventDetails.tickets.find(
@@ -382,7 +438,23 @@ export class EventTransactionsComponent implements OnInit {
   // Get ticket types from event details
   getTicketTypes(): string[] {
     if (!this.eventDetails || !this.eventDetails.tickets) return [];
-    return this.eventDetails.tickets.map((ticket: any) => ticket.title);
+
+    // Get regular ticket types
+    const regularTickets = this.eventDetails.tickets.map(
+      (ticket: any) => ticket.title
+    );
+
+    // Get unique ticket types from all transactions (including offline)
+    const allTicketTypes = [
+      ...new Set(
+        this.transactions.flatMap((t) =>
+          t.tickets.map((ticket: any) => ticket.title)
+        )
+      ),
+    ];
+
+    // Combine and remove duplicates
+    return [...new Set([...regularTickets, ...allTicketTypes])];
   }
 
   // Get paginated data
@@ -623,20 +695,32 @@ export class EventTransactionsComponent implements OnInit {
     console.log('Navigating to offline check-in');
   }
 
-  calculateTotalRevenue(): number {
-    let totalRevenue = 0;
+  calculateTotalRevenue(): { original: number; discounted: number } {
+  let originalRevenue = 0;
+  let discountedRevenue = 0;
 
-    // Loop through all transactions
-    for (const transaction of this.transactions) {
-      // Only count successful transactions
-      if (transaction.status === 'success') {
-        // Sum up the totalAmount for each transaction
-        totalRevenue += transaction.totalAmount || 0;
+  for (const transaction of this.transactions) {
+    if (transaction.status === 'success' && transaction.tickets) {
+      for (const ticket of transaction.tickets) {
+        const ticketTotal = (ticket.price || 0) * (ticket.quantity || 1);
+        originalRevenue += ticketTotal;
+        
+        // For discounted revenue, use the proportional discount if available
+        if (transaction.discountedPrice && transaction.originalPrice) {
+          const discountRatio = transaction.discountedPrice / transaction.originalPrice;
+          discountedRevenue += ticketTotal * discountRatio;
+        } else {
+          discountedRevenue += ticketTotal;
+        }
       }
     }
-
-    return totalRevenue;
   }
+
+  return {
+    original: originalRevenue,
+    discounted: discountedRevenue,
+  };
+}
 
   refreshTransactions(): void {
     this.loading = true;

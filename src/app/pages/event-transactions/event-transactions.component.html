@@ -95,12 +95,40 @@
         <h2 class="text-xl font-semibold text-white mb-4">Ticket Buyers</h2>
 
         <div class="flex flex-wrap items-center space-x-2 mb-4">
-          <span class="text-sm text-gray-200 whitespace-nowrap"
-            >Total Revenue:
-            <span class="text-rio-medium">{{
-              (calculateTotalRevenue() | currency : "INR") || "₹0.00"
-            }}</span></span
-          >
+          <span class="text-sm text-gray-200 whitespace-nowrap">
+  Total Revenue:
+  <span
+    *ngIf="
+      calculateTotalRevenue().original !==
+      calculateTotalRevenue().discounted
+    "
+    class="text-white line-through mr-1"
+  >
+    {{
+      (calculateTotalRevenue().original | currency : "INR") || "₹0.00"
+    }}
+  </span>
+  <span class="text-white">
+    {{
+      (calculateTotalRevenue().discounted | currency : "INR") ||
+        "₹0.00"
+    }}
+  </span>
+  <span
+    *ngIf="
+      calculateTotalRevenue().original >
+      calculateTotalRevenue().discounted
+    "
+    class="text-green-400 ml-1"
+  >
+    ({{
+      ((calculateTotalRevenue().original -
+        calculateTotalRevenue().discounted) /
+        calculateTotalRevenue().original) *
+        100 | number : "1.0-0"
+    }}% OFF)
+  </span>
+</span>
           <span class="mx-2 text-gray-500">|</span>
           <span class="text-sm text-gray-200"
             >Total Tickets Sold:
@@ -215,11 +243,14 @@
           <div class="overflow-x-auto">
             <table class="min-w-full">
               <thead>
-                <tr class="bg-black/30 text-white uppercase text-xs">
+                <tr class="bg-black/30 text-rio-medium uppercase text-xs no-scrollbar">
                   <th class="py-3 px-4 text-left">#</th>
                   <th class="py-3 px-4 text-left">Buyer</th>
                   <th class="py-3 px-4 text-left">Quantity</th>
-                  <th class="py-3 px-4 text-left">Ticket Price</th>
+                  <th class="py-3 px-4 text-left">Original Price</th>
+                  <th class="py-3 px-4 text-left">Discounted Price</th>
+                  <th class="py-3 px-4 text-left">Discount</th>
+                  <!-- <th class="py-3 px-4 text-left">Ticket Price</th> -->
                   <th class="py-3 px-4 text-left">Purchase Date</th>
                   <!-- <th class="py-3 px-4 text-left">Total Amount</th> -->
                   <th class="py-3 px-4 text-left">Valid Dates</th>
@@ -259,32 +290,50 @@
                   <td class="py-3 px-4 text-gray-200">
                     {{ transaction.currentTicket.quantity || 1 }}
                   </td>
+                  <!-- <td class="py-3 px-4 text-gray-200">
+                      ₹{{
+                        transaction.originalPrice ||
+                          transaction.currentTicket.price
+                      }}
+                    </td> -->
+                  <td class="py-3 px-4 text-gray-200 leading-5">
+                    ₹{{ transaction.currentTicket.price }}
+                    <span
+                      *ngIf="transaction.transactionType && transaction.transactionType === 'offline'"
+                      class="text-green-400 text-[10px] whitespace-nowrap"
+                    >
+                      (Offline Ticket)
+                    </span>
+                  </td>
                   <td class="py-3 px-4 text-gray-200">
                     ₹{{
-                      transaction.currentTicket.price ||
-                        getTicketPrice(transaction.currentTicket.title)
+                      transaction.discountedPrice ? transaction.currentTicket.price - transaction.currentTicket.price*transaction.discountPercentage/100  : transaction.discountedPrice ||
+                        transaction.currentTicket.price
                     }}
                   </td>
+                  <td class="py-3 px-4 text-gray-200">
+                    <span
+                      *ngIf="transaction.discountPercentage"
+                      class="text-rio-medium text-sm"
+                    >
+                      {{ transaction.discountPercentage }}% OFF
+                    </span>
+                    <span *ngIf="!transaction.discountPercentage">-</span>
+                  </td>
+                  <!-- <td class="py-3 px-4 text-gray-200">
+                      ₹{{
+                        transaction.currentTicket.price ||
+                          getTicketPrice(transaction.currentTicket.title)
+                      }}
+                    </td> -->
                   <td class="py-3 px-4 text-gray-200">
                     {{ formatDate(transaction.createdAt) }}
                   </td>
                   <!-- <td class="py-3 px-4 text-gray-200">
-                    ₹{{ transaction.totalAmount }}
-                  </td> -->
+                      ₹{{ transaction.totalAmount }}
+                    </td> -->
                   <td class="py-3 px-4 text-gray-200">
                     <div *ngIf="transaction.currentTicket.dates">
-                      <div
-                        *ngIf="
-                          transaction.currentTicket.ticketDate &&
-                          !transaction.currentTicket.dates[0]
-                        "
-                        class="text-sm whitespace-nowrap"
-                      >
-                        {{
-                          transaction.currentTicket.ticketDate
-                            | date : "MMM d, y"
-                        }}
-                      </div>
                       <div
                         *ngFor="
                           let dateRange of transaction.currentTicket.dates
@@ -306,7 +355,7 @@
                   </td>
                   <td class="py-3 px-4">
                     <span
-                      class="whitespace-nowrap text-sm text-white hover:text-white cursor-pointer"
+                      class="whitespace-nowrap text-sm text-rio-medium hover:text-rio-white cursor-pointer"
                     >
                       {{ transaction.receipt }}
                     </span>
@@ -319,7 +368,9 @@
                       {{ transaction.status }}
                     </span>
                   </td>
-                  <td class="py-3 px-4 text-center">
+                  <td
+                    class="py-3 px-4 text-center flex flex-nowrap items-center justify-center"
+                  >
                     <div *ngIf="transaction.status === 'success'">
                       <span class="text-sm mr-2">
                         {{
@@ -333,7 +384,7 @@
                         (click)="
                           checkIn(transaction, transaction.currentTicket)
                         "
-                        class="whitespace-nowrap px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm cursor-pointer"
+                        class="whitespace-nowrap px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                       >
                         Check
                       </button>
@@ -748,49 +799,123 @@
       </div>
 
       <!-- Tickets Selection -->
+      <div
+  *ngFor="let ticket of newBooking.tickets"
+  class="mb-4 p-4 border border-gray-700 rounded-lg bg-white/5"
+>
+  <div class="flex justify-between items-center mb-2">
+    <div>
+      <h4 class="text-sm sm:text-base font-medium text-white">
+        {{ ticket.title }}
+      </h4>
+      <p class="text-sm sm:text-base text-gray-300">
+        <span *ngIf="newBooking.useOfflinePricing">
+          ₹{{ ticket.offlinePrice }} each
+          <span class="text-xs text-gray-400 line-through"
+            >(Original: ₹{{ ticket.price }})</span
+          >
+        </span>
+        <span *ngIf="!newBooking.useOfflinePricing">
+          ₹{{ ticket.price }} each
+          <span *ngIf="ticket.offlinePrice" class="text-xs text-gray-400"
+            >(Offline: ₹{{ ticket.offlinePrice }})</span
+          >
+        </span>
+      </p>
+      <p *ngIf="ticket.maxQuantity <= 10" class="text-sm text-gray-400">
+        {{ ticket.maxQuantity }} available
+      </p>
+    </div>
+    <div class="flex items-center">
+      <button
+        (click)="decreaseQuantity(ticket)"
+        class="text-sm sm:text-base bg-blue-600/70 px-3 py-1 rounded-l text-white hover:bg-white/90 cursor-pointer"
+        [disabled]="ticket.quantity <= 0"
+      >
+        -
+      </button>
+      <span class="text-sm sm:text-base px-4 py-1 bg-white/10 text-white"
+        >{{ ticket.quantity }}</span
+      >
+      <button
+        (click)="increaseQuantity(ticket)"
+        class="bg-blue-600/70 px-3 py-1 rounded-r text-white hover:bg-white/90 cursor-pointer"
+        [disabled]="ticket.quantity >= ticket.maxQuantity"
+      >
+        +
+      </button>
+    </div>
+  </div>
+</div>
       <div class="mb-6">
-        <h3 class="text-sm font-medium text-gray-200 mb-1">
-          Tickets<span class="text-red-500">*</span>
-        </h3>
-        <div
-          *ngFor="let ticket of newBooking.tickets"
-          class="mb-4 p-4 border border-gray-700 rounded-lg bg-white/5"
-        >
-          <div class="flex justify-between items-center mb-2">
-            <div>
-              <h4 class="text-sm sm:text-base font-medium text-white">
-                {{ ticket.title }}
-              </h4>
-              <p class="text-sm sm:text-base text-gray-300">
-                ₹{{ ticket.price }} each
-              </p>
-              <p *ngIf="ticket.maxQuantity <= 10" class="text-sm text-gray-400">
-                {{ ticket.maxQuantity }} available
-              </p>
-            </div>
-            <div class="flex items-center">
-              <button
-                (click)="decreaseQuantity(ticket)"
-                class="text-sm sm:text-base bg-blue-600/70 px-3 py-1 rounded-l text-white hover:bg-white/90 cursor-pointer"
-                [disabled]="ticket.quantity <= 0"
-              >
-                -
-              </button>
-              <span
-                class="text-sm sm:text-base px-4 py-1 bg-white/10 text-white"
-                >{{ ticket.quantity }}</span
-              >
-              <button
-                (click)="increaseQuantity(ticket)"
-                class="bg-blue-600/70 px-3 py-1 rounded-r text-white hover:bg-white/90 cursor-pointer"
-                [disabled]="ticket.quantity >= ticket.maxQuantity"
-              >
-                +
-              </button>
-            </div>
-          </div>
+  <h3 class="text-lg font-medium text-white mb-3">Pricing Options</h3>
+  <div class="flex items-center mb-4">
+    <label class="inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        [(ngModel)]="newBooking.useOfflinePricing"
+        (change)="toggleOfflinePricing()"
+        class="sr-only peer"
+      />
+      <div
+        class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+      ></div>
+      <span class="ms-3 text-sm font-medium text-gray-200"
+        >Use Custom Offline Pricing</span
+      >
+    </label>
+  </div>
+
+  <!-- Offline Pricing Fields (shown only when toggle is on) -->
+  <div
+    *ngIf="newBooking.useOfflinePricing"
+    class="bg-white/5 p-4 rounded-lg border border-gray-700"
+  >
+    <h4 class="text-md font-medium text-white mb-3">
+      Customize Offline Tickets
+    </h4>
+
+    <div
+      *ngFor="let ticket of editableTickets; let i = index"
+      class="mb-4 p-4 border border-gray-700 rounded-lg"
+    >
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-200 mb-1"
+            >Ticket Name</label
+          >
+          <input
+            type="text"
+            [(ngModel)]="ticket.title"
+            class="w-full px-3 py-2 bg-white/10 border border-gray-700 rounded focus:ring-2 focus:ring-white text-white"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-200 mb-1"
+            >Offline Price (₹)</label
+          >
+          <input
+            type="number"
+            [(ngModel)]="ticket.offlinePrice"
+            min="0"
+            class="w-full px-3 py-2 bg-white/10 border border-gray-700 rounded focus:ring-2 focus:ring-white text-white"
+          />
         </div>
       </div>
+      <div class="flex justify-between items-center">
+        <span class="text-sm text-gray-300"
+          >Original Price: ₹{{ ticket.price }}</span
+        >
+        <button
+          (click)="applyTicketChanges(i)"
+          class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-600/80"
+        >
+          Apply Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
     </div>
 
     <!-- Modal Footer -->
