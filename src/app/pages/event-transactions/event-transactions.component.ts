@@ -722,9 +722,182 @@ applyTicketChanges(index: number): void {
   };
 }
 
+  // Calculate offline revenue
+  calculateOfflineRevenue(): { original: number; discounted: number } {
+    let originalRevenue = 0;
+    let discountedRevenue = 0;
+
+    for (const transaction of this.transactions) {
+      if (transaction.status === 'success' && transaction.transactionType === 'offline' && transaction.tickets) {
+        for (const ticket of transaction.tickets) {
+          const ticketTotal = (ticket.price || 0) * (ticket.quantity || 1);
+          originalRevenue += ticketTotal;
+          
+          // For discounted revenue, use the proportional discount if available
+          if (transaction.discountedPrice && transaction.originalPrice) {
+            const discountRatio = transaction.discountedPrice / transaction.originalPrice;
+            discountedRevenue += ticketTotal * discountRatio;
+          } else {
+            discountedRevenue += ticketTotal;
+          }
+        }
+      }
+    }
+
+    return {
+      original: originalRevenue,
+      discounted: discountedRevenue,
+    };
+  }
+
+  // Calculate online revenue
+  calculateOnlineRevenue(): { original: number; discounted: number } {
+    let originalRevenue = 0;
+    let discountedRevenue = 0;
+
+    for (const transaction of this.transactions) {
+      if (transaction.status === 'success' && transaction.transactionType === 'online' && transaction.tickets) {
+        for (const ticket of transaction.tickets) {
+          const ticketTotal = (ticket.price || 0) * (ticket.quantity || 1);
+          originalRevenue += ticketTotal;
+          
+          // For discounted revenue, use the proportional discount if available
+          if (transaction.discountedPrice && transaction.originalPrice) {
+            const discountRatio = transaction.discountedPrice / transaction.originalPrice;
+            discountedRevenue += ticketTotal * discountRatio;
+          } else {
+            discountedRevenue += ticketTotal;
+          }
+        }
+      }
+    }
+
+    return {
+      original: originalRevenue,
+      discounted: discountedRevenue,
+    };
+  }
+
   refreshTransactions(): void {
     this.loading = true;
     this.loadTransactions();
     this.toaster.showToast('info', 'Transactions refreshed successfully');
+  }
+
+  // Export booking data to CSV
+  exportBookingData(): void {
+    try {
+      // Prepare data for export
+      const exportData: any[] = [];
+      
+      // Add header row
+      const headers = [
+        'Serial No.',
+        'Buyer Name',
+        'Buyer Email',
+        'Buyer Phone',
+        'Ticket Type',
+        'Quantity',
+        'Original Price (₹)',
+        'Discounted Price (₹)',
+        'Discount %',
+        'Total Amount (₹)',
+        'Purchase Date',
+        'Transaction Type',
+        'Receipt ID',
+        'Status',
+        'Checked In Quantity',
+        'Remaining Quantity',
+        'Valid Dates'
+      ];
+      
+      exportData.push(headers);
+      
+      // Add data rows
+      let serialNo = 1;
+      
+      for (const transaction of this.transactions) {
+        if (transaction.tickets && transaction.tickets.length > 0) {
+          for (const ticket of transaction.tickets) {
+            const checkedInQty = this.getCheckedInQuantity(transaction, ticket._id || ticket.ticketId);
+            const remainingQty = (ticket.quantity || 1) - checkedInQty;
+            
+            // Calculate prices
+            const originalPrice = ticket.price || 0;
+            const discountedPrice = transaction.discountedPrice ? 
+              (transaction.discountedPrice / transaction.originalPrice) * originalPrice : originalPrice;
+            const discountPercentage = transaction.discountPercentage || 0;
+            const totalAmount = discountedPrice * (ticket.quantity || 1);
+            
+            // Format valid dates
+            let validDates = 'N/A';
+            if (ticket.dates && ticket.dates.length > 0) {
+              validDates = ticket.dates.map((dateRange: any) => {
+                if (Array.isArray(dateRange) && dateRange.length > 0) {
+                  const startDate = new Date(dateRange[0]).toLocaleDateString();
+                  const endDate = dateRange[1] ? new Date(dateRange[1]).toLocaleDateString() : '';
+                  return endDate ? `${startDate} - ${endDate}` : startDate;
+                }
+                return new Date(dateRange).toLocaleDateString();
+              }).join(', ');
+            } else if (ticket.ticketDate) {
+              validDates = new Date(ticket.ticketDate).toLocaleDateString();
+            }
+            
+            const row = [
+              serialNo++,
+              transaction.userId?.name || transaction.customerInfo?.name || 'Anonymous',
+              transaction.userId?.email || transaction.customerInfo?.email || 'N/A',
+              transaction.userId?.phone || transaction.customerInfo?.phone || 'N/A',
+              ticket.title,
+              ticket.quantity || 1,
+              originalPrice,
+              discountedPrice.toFixed(2),
+              discountPercentage,
+              totalAmount.toFixed(2),
+              new Date(transaction.createdAt).toLocaleString(),
+              transaction.transactionType || 'online',
+              transaction.receipt,
+              transaction.status,
+              checkedInQty,
+              remainingQty,
+              validDates
+            ];
+            
+            exportData.push(row);
+          }
+        }
+      }
+      
+      // Convert to CSV
+      const csvContent = exportData.map(row => 
+        row.map((field: any) => {
+          // Handle fields that might contain commas or quotes
+          if (typeof field === 'string' && (field.includes(',') || field.includes('"') || field.includes('\n'))) {
+            return `"${field.replace(/"/g, '""')}"`;
+          }
+          return field;
+        }).join(',')
+      ).join('\n');
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${this.eventDetails?.title || 'Event'}_Booking_Data_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.toaster.showToast('success', 'Booking data exported successfully');
+      }
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      this.toaster.showToast('error', 'Failed to export booking data');
+    }
   }
 }

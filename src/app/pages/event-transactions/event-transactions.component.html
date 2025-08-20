@@ -92,53 +92,92 @@
       class="bg-white/10 rounded-lg shadow-lg p-6 mb-6 border border-gray-700"
     >
       <div class="flex flex-wrap justify-between items-center">
-        <h2 class="text-xl font-semibold text-white mb-4">Ticket Buyers</h2>
+        <h2 class="text-xl font-semibold text-rio-white mb-4">Ticket Buyers</h2>
 
-        <div class="flex flex-wrap items-center space-x-2 mb-4">
-          <span class="text-sm text-gray-200 whitespace-nowrap">
-  Total Revenue:
-  <span
-    *ngIf="
-      calculateTotalRevenue().original !==
-      calculateTotalRevenue().discounted
-    "
-    class="text-white line-through mr-1"
-  >
-    {{
-      (calculateTotalRevenue().original | currency : "INR") || "₹0.00"
-    }}
-  </span>
-  <span class="text-white">
-    {{
-      (calculateTotalRevenue().discounted | currency : "INR") ||
-        "₹0.00"
-    }}
-  </span>
-  <span
-    *ngIf="
-      calculateTotalRevenue().original >
-      calculateTotalRevenue().discounted
-    "
-    class="text-green-400 ml-1"
-  >
-    ({{
-      ((calculateTotalRevenue().original -
-        calculateTotalRevenue().discounted) /
-        calculateTotalRevenue().original) *
-        100 | number : "1.0-0"
-    }}% OFF)
-  </span>
-</span>
-          <span class="mx-2 text-gray-500">|</span>
-          <span class="text-sm text-gray-200"
-            >Total Tickets Sold:
-            <span class="text-white">{{ totalAllTicketsSold() }}</span></span
-          >
-          <span class="mx-2 text-gray-500">|</span>
-          <span class="text-sm text-gray-200">
-            Total Checked In:
-            <span class="text-rio-medium">{{ totalCheckedInCount() }}</span>
-          </span>
+        <!-- Revenue Breakdown Section -->
+        <div class="w-full mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <!-- Total Revenue -->
+            <div class="bg-white/5 rounded-lg p-4 border border-gray-700">
+              <div class="text-center">
+                <h3 class="text-sm font-medium text-gray-300 mb-2">Total Revenue</h3>
+                <div class="text-xl font-bold text-rio-medium">
+                  {{
+                    (calculateTotalRevenue().discounted | currency : "INR") ||
+                      "₹0.00"
+                  }}
+                </div>
+                <div
+                  *ngIf="
+                    calculateTotalRevenue().original !==
+                    calculateTotalRevenue().discounted
+                  "
+                  class="text-xs text-gray-400 mt-1"
+                >
+                  Original: {{ calculateTotalRevenue().original | currency : "INR" }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Online Revenue -->
+            <div class="bg-white/5 rounded-lg p-4 border border-gray-700">
+              <div class="text-center">
+                <h3 class="text-sm font-medium text-gray-300 mb-2">Online Revenue</h3>
+                <div class="text-xl font-bold text-rio-medium">
+                  {{
+                    (calculateOnlineRevenue().discounted | currency : "INR") ||
+                      "₹0.00"
+                  }}
+                </div>
+                <div
+                  *ngIf="
+                    calculateOnlineRevenue().original !==
+                    calculateOnlineRevenue().discounted
+                  "
+                  class="text-xs text-gray-400 mt-1"
+                >
+                  Original: {{ calculateOnlineRevenue().original | currency : "INR" }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Offline Revenue -->
+            <div class="bg-white/5 rounded-lg p-4 border border-gray-700">
+              <div class="text-center">
+                <h3 class="text-sm font-medium text-gray-300 mb-2">Offline Revenue</h3>
+                <div class="text-xl font-bold text-rio-medium">
+                  {{
+                    (calculateOfflineRevenue().discounted | currency : "INR") ||
+                      "₹0.00"
+                  }}
+                </div>
+                <div
+                  *ngIf="
+                    calculateOfflineRevenue().original !==
+                    calculateOfflineRevenue().discounted
+                  "
+                  class="text-xs text-gray-400 mt-1"
+                >
+                  Original: {{ calculateOfflineRevenue().original | currency : "INR" }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Other Stats -->
+            <div class="bg-white/5 rounded-lg p-4 border border-gray-700">
+              <div class="text-center">
+                <h3 class="text-sm font-medium text-gray-300 mb-2">Quick Stats</h3>
+                <div class="space-y-1">
+                  <div class="text-sm text-gray-200">
+                    Sold: <span class="text-rio-medium font-semibold">{{ totalAllTicketsSold() }}</span>
+                  </div>
+                  <div class="text-sm text-gray-200">
+                    Checked In: <span class="text-rio-medium font-semibold">{{ totalCheckedInCount() }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -148,7 +187,7 @@
           <input
             type="text"
             placeholder="Search by name, email, or receipt ID"
-            class="w-full px-4 py-2 bg-white/20 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-white text-white"
+            class="w-full px-4 py-2 bg-white/20 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-medium text-white"
             [(ngModel)]="searchQuery"
             (input)="applyFilters()"
           />
@@ -156,21 +195,21 @@
 
         <!-- Status Filter -->
         <!-- <div>
-          <select
-            class="appearance-none w-full px-4 py-2 bg-white/10 text-white border-2 border-transparent rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent cursor-pointer transition-all duration-300 hover:shadow-lg font-medium text-xs sm:text-sm relative"
-            [(ngModel)]="filterStatus"
-          >
-            <option value="all" class="bg-white text-gray-800 hover:bg-white/30">All Statuses</option>
-            <option value="success" class="bg-white text-gray-800 hover:bg-white/30">Success</option>
-            <option value="pending" class="bg-white text-gray-800 hover:bg-white/30">Pending</option>
-            <option value="failed" class="bg-white text-gray-800 hover:bg-white/30">Failed</option>
-          </select>
-        </div> -->
+            <select
+              class="appearance-none w-full px-4 py-2 bg-white/10 text-rio-white border-2 border-transparent rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-rio-medium focus:border-transparent cursor-pointer transition-all duration-300 hover:shadow-lg font-medium text-xs sm:text-sm relative"
+              [(ngModel)]="filterStatus"
+            >
+              <option value="all" class="bg-rio-medium text-gray-800 hover:bg-rio-medium/30">All Statuses</option>
+              <option value="success" class="bg-rio-medium text-gray-800 hover:bg-rio-medium/30">Success</option>
+              <option value="pending" class="bg-rio-medium text-gray-800 hover:bg-rio-medium/30">Pending</option>
+              <option value="failed" class="bg-rio-medium text-gray-800 hover:bg-rio-medium/30">Failed</option>
+            </select>
+          </div> -->
 
         <!-- Ticket Type Filter -->
         <div class="flex">
           <select
-            class="appearance-none w-full px-4 py-2 bg-white/10 text-white border-2 border-transparent rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent cursor-pointer transition-all duration-300 hover:shadow-lg font-medium text-xs sm:text-sm relative"
+            class="appearance-none w-full px-4 py-2 bg-white/10 text-rio-white border-2 border-transparent rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent cursor-pointer transition-all duration-300 hover:shadow-lg font-medium text-xs sm:text-sm relative"
             [(ngModel)]="filterTicketType"
           >
             <option
@@ -190,7 +229,7 @@
         </div>
         <button
           (click)="showCreateForm = !showCreateForm"
-          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-white/70 transition text-lg font-semibold cursor-pointer"
+          class="bg-white text-black px-4 py-2 rounded hover:bg-white/70 transition text-lg font-semibold cursor-pointer"
           title="Create Offline Booking"
         >
           +
@@ -198,9 +237,8 @@
             >Create Offline Booking</span
           >
         </button>
-        <!-- refresh button -->
         <button
-          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-white/70 transition text-lg font-semibold cursor-pointer"
+          class="bg-white text-black p-2 rounded hover:bg-white/70 transition text-lg font-semibold cursor-pointer"
           (click)="refreshTransactions()"
           title="Refresh Transactions"
         >
@@ -215,6 +253,26 @@
               d="M17.65 6.35a7.95 7.95 0 0 0-6.48-2.31c-3.67.37-6.69 3.35-7.1 7.02C3.52 15.91 7.27 20 12 20a7.98 7.98 0 0 0 7.21-4.56c.32-.67-.16-1.44-.9-1.44c-.37 0-.72.2-.88.53a5.994 5.994 0 0 1-6.8 3.31c-2.22-.49-4.01-2.3-4.48-4.52A6.002 6.002 0 0 1 12 6c1.66 0 3.14.69 4.22 1.78l-1.51 1.51c-.63.63-.19 1.71.7 1.71H19c.55 0 1-.45 1-1V6.41c0-.89-1.08-1.34-1.71-.71z"
             />
           </svg>
+        </button>
+        
+        <!-- Export Button -->
+        <button
+          class="bg-white text-black p-2 rounded hover:bg-white/70 transition text-lg font-semibold cursor-pointer flex items-center gap-2"
+          (click)="exportBookingData()"
+          title="Export Booking Data"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+          >
+            <path
+              fill="currentColor"
+              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6m4 18H6V4h7v5h5v11Z"
+            />
+          </svg>
+          <span class="hidden md:inline-block text-sm">Export Data</span>
         </button>
       </div>
     </div>
