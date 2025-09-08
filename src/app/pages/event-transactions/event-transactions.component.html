@@ -288,10 +288,17 @@
         <div
           class="bg-white/10 rounded-lg shadow-lg p-6 border border-gray-700"
         >
-          <h3 class="text-lg font-semibold text-white mb-4">
-            Ticket: {{ ticketTitle }}
+          <h3 class="text-lg font-semibold text-white mb-4 flex justify-start items-center flex-wrap gap-2">
+            <span class="mr-2 sm:mr-0">
+              Ticket: {{ ticketTitle }}
+            </span>
             <span
-              class="ml-2 px-3 py-1 text-xs rounded-full bg-indigo-600 text-white whitespace-nowrap"
+              class="px-3 py-1 text-xs rounded-full bg-indigo-600 text-white whitespace-nowrap"
+            >
+               {{ totalQuantityOfTicketSold(ticketTitle) }} sold
+            </span>
+            <span
+              class="px-3 py-1 text-xs rounded-full bg-indigo-600 text-white whitespace-nowrap"
             >
               {{ filteredGroupedTransactions[ticketTitle].length }} buyers
             </span>
