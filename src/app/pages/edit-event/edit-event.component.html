@@ -654,17 +654,23 @@
               <p class="text-gray-300 text-sm">
                 Expires: {{ coupon.expiry | date : "mediumDate" }}
               </p>
+              <p class="text-gray-300 text-sm">
+                Usage Limit:
+                <span *ngIf="coupon.usageLimit && coupon.usageLimit > 0" class="text-yellow-400 font-medium">{{ coupon.usageLimit }} uses</span>
+                <span *ngIf="!coupon.usageLimit || coupon.usageLimit === 0" class="text-green-400 font-medium">Unlimited</span>
+              </p>
             </div>
           </div>
 
           <div class="p-4 bg-gray-700 rounded">
             <h5 class="font-medium text-white mb-3">Add New Coupon</h5>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label class="block text-gray-400 text-sm mb-1">Code*</label>
                 <input
                   [(ngModel)]="newCoupon.code"
                   [ngModelOptions]="{ standalone: true }"
+                  placeholder="e.g. SAVE20"
                   class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
                 />
               </div>
@@ -679,6 +685,7 @@
                   type="number"
                   min="0"
                   max="100"
+                  placeholder="e.g. 20"
                   class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
                 />
               </div>
@@ -693,6 +700,21 @@
                   type="date"
                   class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
                 />
+              </div>
+
+              <div>
+                <label class="block text-gray-400 text-sm mb-1"
+                  >Usage Limit</label
+                >
+                <input
+                  [(ngModel)]="newCoupon.usageLimit"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="number"
+                  min="0"
+                  placeholder="0 = Unlimited"
+                  class="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                />
+                <small class="text-gray-500 text-xs">Leave 0 for unlimited uses</small>
               </div>
             </div>
 

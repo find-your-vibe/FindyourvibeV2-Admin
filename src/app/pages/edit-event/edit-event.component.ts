@@ -13,7 +13,8 @@ interface CouponItem {
   _id: string,
   code: string,
   value: number,
-  expiry: string
+  expiry: string,
+  usageLimit?: number
 }
 
 @Component({
@@ -52,7 +53,8 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
     _id: '',
     code: '',
     value: 0,
-    expiry: ''
+    expiry: '',
+    usageLimit: undefined
   };
   
   coupons: CouponItem[] = [];
@@ -566,11 +568,14 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
     
     // Create promises for all coupon operations
     const promises = newCoupons.map(coupon => {
-      const couponData = {
+      const couponData: { code: string; value: number; expiry: string; usageLimit?: number } = {
         code: coupon.code,
         value: coupon.value,
         expiry: coupon.expiry
       };
+      if (coupon.usageLimit && coupon.usageLimit > 0) {
+        couponData.usageLimit = coupon.usageLimit;
+      }
       return this.eventService.addCoupon(eventId, couponData).toPromise();
     });
     
@@ -894,7 +899,8 @@ export class EditEventComponent implements OnInit, AfterViewInit, AfterViewCheck
       _id: '',
       code: '',
       value: 0,
-      expiry: ''
+      expiry: '',
+      usageLimit: undefined
     };
     
     this.toaster.showToast('success', 'Coupon added to form');
