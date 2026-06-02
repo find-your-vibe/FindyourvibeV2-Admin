@@ -1,0 +1,96 @@
+<!-- signup.component.html -->
+<div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-4">
+        <div class="card mt-5">
+          <div class="card-body">
+            <h2 class="card-title text-center mb-4">Admin Registration</h2>
+            
+            <form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
+              <div *ngIf="errorMessage" class="alert alert-danger">
+                {{ errorMessage }}
+              </div>
+              
+              <div *ngIf="successMessage" class="alert alert-success">
+                {{ successMessage }}
+              </div>
+              
+              <div class="mb-3">
+                <label for="name" class="form-label">Full Name</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="name" 
+                  formControlName="name"
+                  [class.is-invalid]="signupForm.get('name')?.invalid && signupForm.get('name')?.touched">
+                <div *ngIf="signupForm.get('name')?.invalid && signupForm.get('name')?.touched" class="invalid-feedback">
+                  Name is required
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  id="email" 
+                  formControlName="email"
+                  [class.is-invalid]="signupForm.get('email')?.invalid && signupForm.get('email')?.touched">
+                <div *ngIf="signupForm.get('email')?.invalid && signupForm.get('email')?.touched" class="invalid-feedback">
+                  <div *ngIf="signupForm.get('email')?.errors?.['required']">
+                    Email is required
+                  </div>
+                  <div *ngIf="signupForm.get('email')?.errors?.['email']">
+                    Please enter a valid email
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input 
+                  type="password" 
+                  class="form-control" 
+                  id="password" 
+                  formControlName="password"
+                  [class.is-invalid]="signupForm.get('password')?.invalid && signupForm.get('password')?.touched">
+                <div *ngIf="signupForm.get('password')?.invalid && signupForm.get('password')?.touched" class="invalid-feedback">
+                  <div *ngIf="signupForm.get('password')?.errors?.['required']">
+                    Password is required
+                  </div>
+                  <div *ngIf="signupForm.get('password')?.errors?.['minlength']">
+                    Password must be at least 6 characters
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input 
+                  type="tel" 
+                  class="form-control" 
+                  id="phone" 
+                  formControlName="phone"
+                  [class.is-invalid]="signupForm.get('phone')?.invalid && signupForm.get('phone')?.touched">
+                <div *ngIf="signupForm.get('phone')?.invalid && signupForm.get('phone')?.touched" class="invalid-feedback">
+                  Phone number is required
+                </div>
+              </div>
+              
+              <button 
+                type="submit" 
+                class="btn btn-primary w-100"
+                [disabled]="signupForm.invalid || isLoading">
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                {{ isLoading ? 'Registering...' : 'Register' }}
+              </button>
+              
+              <div class="text-center mt-3">
+                <a routerLink="/login">Already have an account? Login</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

@@ -1,0 +1,29 @@
+@keyframes slide-in {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  }
+
+  @keyframes wiggle {
+    0% { transform: rotate(0deg); }
+   25% { transform: rotate(5deg); }
+   50% { transform: rotate(0deg); }
+   75% { transform: rotate(-5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+
+  .animate-slide-in { animation: slide-in 0.5s ease-out; }
+  .animate-shake { animation: shake 0.5s; }
+  .animate-wiggle { animation: wiggle 0.5s; }
+  .animate-pulse { animation: pulse 1.5s infinite; }
+
+  .success-toast { background-color: #16a34a; opacity: 0.9; }
+  .error-toast { background-color: #dc2626; opacity: 0.9; }
+  .warning-toast { background-color: #ca8a04; opacity: 0.9; }
+  .info-toast { background-color: #2563eb; opacity: 0.9; }
