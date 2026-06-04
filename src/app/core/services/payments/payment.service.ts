@@ -36,9 +36,14 @@ export interface Transaction {
   totalAmount: number;
   transactionType: 'online' | 'offline';
   updatedAt: string;
-  userId: {
+  userId?: {
     _id: string;
-    username: string;
+    name: string;
+    email: string;
+    phone: string;
+  } | null;
+  customerInfo?: {
+    name: string;
     email: string;
     phone: string;
   };
