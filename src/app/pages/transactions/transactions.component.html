@@ -66,9 +66,9 @@
           <tr *ngFor="let transaction of filteredTransactions" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
             <td class="px-4 py-2 border-b dark:border-gray-700 text-xs font-mono">{{ transaction.receipt || '—' }}</td>
 
-            <!-- Customer Name: online = userId.name, offline = customerInfo.name -->
+            <!-- Customer Name: online = userId.username/name, offline = customerInfo.name -->
             <td class="px-4 py-2 border-b dark:border-gray-700">
-              {{ transaction.userId?.name || transaction.customerInfo?.name || 'Anonymous' }}
+              {{ transaction.userId?.username || transaction.userId?.name || transaction.customerInfo?.name || 'Anonymous' }}
               <span *ngIf="transaction.transactionType === 'offline'"
                 class="ml-1 text-[10px] px-1 py-0.5 rounded bg-blue-800 text-blue-200">Offline</span>
             </td>

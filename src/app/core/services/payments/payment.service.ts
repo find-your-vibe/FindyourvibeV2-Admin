@@ -38,7 +38,8 @@ export interface Transaction {
   updatedAt: string;
   userId?: {
     _id: string;
-    name: string;
+    username?: string;
+    name?: string;
     email: string;
     phone: string;
   } | null;
