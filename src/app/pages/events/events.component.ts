@@ -72,6 +72,24 @@ export class EventsComponent implements OnInit {
     });
   }
 
+  cancelEvent(event: EventItem): void {
+    if (!confirm('Are you sure you want to cancel this event? This action cannot be undone.')) {
+      return;
+    }
+    
+    this.eventService.editEvent(event._id!, { status: 'cancelled' }).subscribe({
+      next: () => {
+        event.status = 'cancelled';
+        if (confirm('Event cancelled successfully. Would you like to process refunds now?')) {
+          this.router.navigate(['/refund-management']);
+        }
+      },
+      error: (err) => {
+        console.error('Error cancelling event:', err);
+      }
+    });
+  }
+
   pageChanged(page: number): void {
     this.currentPage = page;
     this.loadEvents();

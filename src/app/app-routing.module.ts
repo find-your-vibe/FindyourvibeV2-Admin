@@ -11,6 +11,7 @@ import { AppComponent } from './app.component';
 import { EditEventComponent } from './pages/edit-event/edit-event.component';
 import { EmailComponent } from './pages/email/email.component';
 import { EventTransactionsComponent } from './pages/event-transactions/event-transactions.component';
+import { RefundManagementComponent } from './pages/refund-management/refund-management.component';
 
 const routes: Routes = [
   { path: '', component: EventsComponent, canActivate: [AdminGuard] },
@@ -27,6 +28,7 @@ const routes: Routes = [
     canActivate: [AdminGuard]
   },
   {path: 'emails', component: EmailComponent, canActivate: [AdminGuard]},
+  {path: 'refund-management', component: RefundManagementComponent, canActivate: [AdminGuard]},
 ];
 
 @NgModule({

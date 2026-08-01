@@ -12,6 +12,7 @@ export const environment = {
     onlinePayment: 'https://api.online.findyourvibe.in',
     offlineBooking: 'https://api.offline.findyourvibe.in',
     email: 'https://api.email.findyourvibe.in',
+    wallet: 'https://api.wallet.findyourvibe.in',
   },
   googleClientId: '731182685257-am4ftjcrn3g0tdskhisicnfgqi7alh5l.apps.googleusercontent.com',
   googleMapsApiKey: 'AIzaSyAN3IE_i83mZ6voW7oFWAnyKn_praJjJLc',

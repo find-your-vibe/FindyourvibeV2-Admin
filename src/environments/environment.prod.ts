@@ -11,5 +11,6 @@ export const environment = {
     onlinePayment: 'https://api.online.findyourvibe.in',
     offlineBooking: 'https://api.offline.findyourvibe.in',
     email: 'https://api.email.findyourvibe.in',
+    wallet: 'https://api.wallet.findyourvibe.in',
   },
 };

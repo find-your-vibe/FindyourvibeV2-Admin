@@ -19,6 +19,7 @@ import { EditEventComponent } from './pages/edit-event/edit-event.component';
 import { ToasterComponent } from './components/toaster/toaster.component';
 import { EmailComponent } from './pages/email/email.component';
 import { EventTransactionsComponent } from './pages/event-transactions/event-transactions.component';
+import { RefundManagementComponent } from './pages/refund-management/refund-management.component';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { EventTransactionsComponent } from './pages/event-transactions/event-tra
     EditEventComponent,
     ToasterComponent,
     EmailComponent,
-    EventTransactionsComponent
+    EventTransactionsComponent,
+    RefundManagementComponent
   ],
   imports: [
     BrowserModule,

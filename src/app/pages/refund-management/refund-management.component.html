@@ -1,0 +1,449 @@
+<div class="mx-auto mt-6 px-4 max-w-7xl text-gray-900 dark:text-gray-100 min-h-screen">
+  <h2 class="text-2xl font-semibold mb-6">Refund Management</h2>
+
+  <app-toaster></app-toaster>
+
+  <!-- Tabs Navigation -->
+  <div class="flex border-b border-gray-700 mb-6 overflow-x-auto">
+    <button (click)="setTab('dashboard')" 
+      class="px-6 py-3 font-medium text-sm focus:outline-none transition-colors border-b-2 whitespace-nowrap"
+      [ngClass]="activeTab === 'dashboard' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-gray-200'">
+      Dashboard
+    </button>
+    <button (click)="setTab('process')" 
+      class="px-6 py-3 font-medium text-sm focus:outline-none transition-colors border-b-2 whitespace-nowrap"
+      [ngClass]="activeTab === 'process' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-gray-200'">
+      Process Refund
+    </button>
+    <button (click)="setTab('history')" 
+      class="px-6 py-3 font-medium text-sm focus:outline-none transition-colors border-b-2 whitespace-nowrap"
+      [ngClass]="activeTab === 'history' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-gray-200'">
+      History
+    </button>
+    <button (click)="setTab('audit')" 
+      [disabled]="!selectedBatchId"
+      class="px-6 py-3 font-medium text-sm focus:outline-none transition-colors border-b-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+      [ngClass]="activeTab === 'audit' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-gray-200'">
+      Audit Logs
+    </button>
+  </div>
+
+  <!-- Dashboard Tab -->
+  <div *ngIf="activeTab === 'dashboard'">
+    <div *ngIf="isLoadingMetrics" class="flex justify-center items-center py-12">
+      <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+    
+    <div *ngIf="!isLoadingMetrics && metrics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-800">
+        <div class="text-gray-400 text-sm font-medium mb-2">Total Amount Refunded</div>
+        <div class="text-3xl font-bold text-white">{{ metrics.totalRefundsAmount | currency:'INR' }}</div>
+        <div class="mt-2 text-sm text-green-400">+{{ metrics.todayRefundsAmount | currency:'INR' }} today</div>
+      </div>
+      
+      <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-800">
+        <div class="text-gray-400 text-sm font-medium mb-2">Total Refunds Processed</div>
+        <div class="text-3xl font-bold text-white">{{ metrics.totalRefundsCount }}</div>
+        <div class="mt-2 text-sm text-gray-400">Transactions</div>
+      </div>
+      
+      <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-800">
+        <div class="text-gray-400 text-sm font-medium mb-2">Pending Refunds</div>
+        <div class="text-3xl font-bold text-yellow-400">{{ metrics.pendingRefunds }}</div>
+        <div class="mt-2 text-sm text-gray-400">Awaiting processing</div>
+      </div>
+      
+      <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-800">
+        <div class="text-gray-400 text-sm font-medium mb-2">Failed Refunds</div>
+        <div class="text-3xl font-bold text-red-400">{{ metrics.failedRefunds }}</div>
+        <div class="mt-2 text-sm text-gray-400">Requires manual action</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Process Refund Tab -->
+  <div *ngIf="activeTab === 'process'">
+    
+    <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 mb-6">
+      <h3 class="text-lg font-medium text-white mb-4">Select Cancelled Event</h3>
+      
+      <div *ngIf="isLoadingEvents" class="text-gray-400 text-sm py-2">
+        <div class="inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2 align-middle"></div>
+        Loading events...
+      </div>
+      
+      <div *ngIf="!isLoadingEvents">
+        <select 
+          class="w-full max-w-xl p-3 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          (change)="onEventSelect($any($event.target).value)">
+          <option value="" disabled selected>-- Select an event to process refunds --</option>
+          <option *ngFor="let event of cancelledEvents" [value]="event._id">
+            {{ event.title }} ({{ event.date?.date | date:'mediumDate' }})
+          </option>
+        </select>
+        <p *ngIf="cancelledEvents.length === 0" class="text-sm text-yellow-500 mt-2">No cancelled events found.</p>
+      </div>
+    </div>
+
+    <!-- Mode Selector & Main Process Area (shown only when event selected) -->
+    <div *ngIf="selectedEvent" class="animate-fadeIn">
+      
+      <!-- Mode toggle -->
+      <div class="flex space-x-4 mb-6">
+        <button 
+          (click)="setProcessMode('one_click')"
+          class="flex-1 py-4 px-6 rounded-xl border transition-all duration-200"
+          [ngClass]="processMode === 'one_click' ? 'bg-blue-600/20 border-blue-500' : 'bg-gray-800 border-gray-700 hover:border-gray-500'">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 bg-blue-500/20 rounded-lg" [ngClass]="{'text-blue-400': processMode === 'one_click', 'text-gray-400': processMode !== 'one_click'}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div class="text-left">
+              <div class="font-semibold" [ngClass]="processMode === 'one_click' ? 'text-blue-400' : 'text-gray-300'">One-Click Auto Refund</div>
+              <div class="text-xs text-gray-400 mt-1">Refund all eligible bookings to their original wallets automatically.</div>
+            </div>
+          </div>
+        </button>
+        
+        <button 
+          (click)="setProcessMode('excel')"
+          class="flex-1 py-4 px-6 rounded-xl border transition-all duration-200"
+          [ngClass]="processMode === 'excel' ? 'bg-purple-600/20 border-purple-500' : 'bg-gray-800 border-gray-700 hover:border-gray-500'">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 bg-purple-500/20 rounded-lg" [ngClass]="{'text-purple-400': processMode === 'excel', 'text-gray-400': processMode !== 'excel'}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div class="text-left">
+              <div class="font-semibold" [ngClass]="processMode === 'excel' ? 'text-purple-400' : 'text-gray-300'">Advanced Excel Mode</div>
+              <div class="text-xs text-gray-400 mt-1">Export bookings, adjust amounts manually, and upload back to process.</div>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <!-- One Click Mode content -->
+      <div *ngIf="processMode === 'one_click'" class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+        <h4 class="text-lg font-medium text-white mb-4">Booking Summary</h4>
+        
+        <div *ngIf="isProcessing" class="flex justify-center py-8">
+          <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+
+        <div *ngIf="!isProcessing && eventBookings.length === 0" class="text-gray-400 py-4 text-center">
+          No eligible bookings found for this event.
+        </div>
+
+        <div *ngIf="!isProcessing && eventBookings.length > 0">
+          <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+              <div class="text-xs text-gray-400 mb-1">Total Users</div>
+              <div class="text-xl font-semibold text-white">{{ eventBookings.length }}</div>
+            </div>
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+              <div class="text-xs text-gray-400 mb-1">Total Tickets</div>
+              <div class="text-xl font-semibold text-white">{{ eventBookings | json }} <!-- Implement a pure pipe or logic for tickets sum if needed --> </div>
+            </div>
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+              <div class="text-xs text-gray-400 mb-1">Total Refund Amount</div>
+              <div class="text-xl font-semibold text-blue-400">{{ getTotalRefundAmount | currency:'INR' }}</div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto mb-6">
+            <table class="min-w-full text-sm text-left text-gray-300">
+              <thead class="text-xs text-gray-400 uppercase bg-gray-900 border-b border-gray-700">
+                <tr>
+                  <th class="px-4 py-3">Booking ID</th>
+                  <th class="px-4 py-3">User</th>
+                  <th class="px-4 py-3 text-right">Amount (INR)</th>
+                  <th class="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let booking of eventBookings.slice(0, 5)" class="border-b border-gray-700 hover:bg-gray-750">
+                  <td class="px-4 py-3 font-mono text-xs">{{ booking.bookingId }}</td>
+                  <td class="px-4 py-3">{{ booking.userName || booking.userId }}</td>
+                  <td class="px-4 py-3 text-right font-medium">{{ booking.amount | number:'1.2-2' }}</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 bg-green-900/50 text-green-400 rounded text-xs">Eligible</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div *ngIf="eventBookings.length > 5" class="text-center py-2 text-xs text-gray-500 bg-gray-900/50 rounded-b-lg">
+              + {{ eventBookings.length - 5 }} more bookings
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <button 
+              (click)="openConfirmModal('one_click')"
+              class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg shadow-blue-500/30 transition-all flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Process All Refunds Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Excel Mode content -->
+      <div *ngIf="processMode === 'excel'" class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+        
+        <div class="flex flex-col md:flex-row gap-6 mb-8">
+          <!-- Step 1 -->
+          <div class="flex-1 bg-gray-900 p-5 rounded-lg border border-gray-700 text-center">
+            <div class="w-10 h-10 bg-gray-800 border-2 border-purple-500 rounded-full flex items-center justify-center text-purple-400 font-bold mx-auto mb-3">1</div>
+            <h5 class="font-medium text-white mb-2">Export Data</h5>
+            <p class="text-xs text-gray-400 mb-4 h-10">Download the template with all eligible bookings for this event.</p>
+            <button 
+              (click)="exportBookingsTemplate()"
+              class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors w-full">
+              Download Template
+            </button>
+          </div>
+          
+          <!-- Step 2 -->
+          <div class="flex-1 bg-gray-900 p-5 rounded-lg border border-gray-700 text-center relative">
+            <div class="w-10 h-10 bg-gray-800 border-2 border-purple-500 rounded-full flex items-center justify-center text-purple-400 font-bold mx-auto mb-3">2</div>
+            <h5 class="font-medium text-white mb-2">Modify Locally</h5>
+            <p class="text-xs text-gray-400 mb-4 h-10">Edit the refund amounts in Excel if partial refunds are needed.</p>
+            <div class="text-purple-400 opacity-50 flex justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Step 3 -->
+          <div class="flex-1 bg-gray-900 p-5 rounded-lg border border-gray-700 text-center">
+            <div class="w-10 h-10 bg-gray-800 border-2 border-purple-500 rounded-full flex items-center justify-center text-purple-400 font-bold mx-auto mb-3">3</div>
+            <h5 class="font-medium text-white mb-2">Upload & Process</h5>
+            <p class="text-xs text-gray-400 mb-4 h-10">Upload the modified file to validate and execute the refunds.</p>
+            <input type="file" #fileInput (change)="onFileChange($event)" accept=".xlsx, .xls" class="hidden">
+            <button 
+              (click)="triggerFileInput()"
+              [disabled]="isUploading"
+              class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors w-full flex items-center justify-center gap-2 disabled:opacity-50">
+              <svg *ngIf="isUploading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Upload Modified File
+            </button>
+          </div>
+        </div>
+
+        <!-- Validation Results -->
+        <div *ngIf="validationResult" class="mt-6 border-t border-gray-700 pt-6 animate-fadeIn">
+          <h4 class="text-lg font-medium text-white mb-4">Validation Results</h4>
+          
+          <div class="flex items-center gap-4 mb-6">
+            <div class="p-3 rounded-full" [ngClass]="validationResult.valid ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'">
+              <svg *ngIf="validationResult.valid" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <svg *ngIf="!validationResult.valid" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <div class="font-medium text-white">{{ validationResult.valid ? 'File is valid and ready to process' : 'Validation Failed' }}</div>
+              <div class="text-sm text-gray-400">
+                Found {{ validationResult.validCount }} valid rows, {{ validationResult.invalidCount }} invalid rows. 
+                Total amount: {{ validationResult.totalAmount | currency:'INR' }}
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!validationResult.valid && validationResult.errors.length > 0" class="bg-red-900/20 border border-red-900 rounded-lg p-4 mb-6">
+            <h5 class="text-sm font-medium text-red-400 mb-2">Errors:</h5>
+            <ul class="text-xs text-red-300 space-y-1 list-disc list-inside">
+              <li *ngFor="let err of validationResult.errors">Row {{ err.row }}: {{ err.reason }}</li>
+            </ul>
+          </div>
+
+          <div class="flex justify-end">
+            <button 
+              [disabled]="!validationResult.valid"
+              (click)="openConfirmModal('excel')"
+              class="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg shadow-lg shadow-purple-500/30 transition-all flex items-center gap-2">
+              Execute Refunds
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- History Tab -->
+  <div *ngIf="activeTab === 'history'">
+    <div *ngIf="isLoadingHistory" class="flex justify-center py-12">
+      <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <div *ngIf="!isLoadingHistory">
+      <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm text-left text-gray-300">
+            <thead class="text-xs text-gray-400 uppercase bg-gray-900/50 border-b border-gray-700">
+              <tr>
+                <th class="px-4 py-3">Batch ID / Date</th>
+                <th class="px-4 py-3">Event</th>
+                <th class="px-4 py-3">Mode</th>
+                <th class="px-4 py-3">Stats</th>
+                <th class="px-4 py-3">Amount</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="historyBatches.length === 0">
+                <td colspan="7" class="px-4 py-8 text-center text-gray-500">No refund history found.</td>
+              </tr>
+              <tr *ngFor="let batch of historyBatches" class="border-b border-gray-700 hover:bg-gray-750">
+                <td class="px-4 py-3">
+                  <div class="font-mono text-xs text-gray-400 mb-1">{{ batch._id.substring(batch._id.length - 8) }}</div>
+                  <div class="text-xs">{{ batch.createdAt | date:'short' }}</div>
+                </td>
+                <td class="px-4 py-3 font-medium">{{ batch.eventTitle || batch.eventId }}</td>
+                <td class="px-4 py-3">
+                  <span class="px-2 py-1 rounded text-xs" [ngClass]="batch.mode === 'one_click' ? 'bg-blue-900/30 text-blue-400' : 'bg-purple-900/30 text-purple-400'">
+                    {{ batch.mode === 'one_click' ? 'Auto' : 'Excel' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-xs">
+                  <div>{{ batch.successfulRefunds }}/{{ batch.totalBookings }} Successful</div>
+                  <div *ngIf="batch.failedRefunds > 0" class="text-red-400">{{ batch.failedRefunds }} Failed</div>
+                </td>
+                <td class="px-4 py-3 font-medium">{{ batch.totalAmount | currency:'INR' }}</td>
+                <td class="px-4 py-3">
+                  <span class="px-2 py-1 rounded text-xs font-medium" [ngClass]="getStatusBadgeClass(batch.status)">
+                    {{ batch.status | titlecase }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <button 
+                    (click)="viewAuditLog(batch._id)"
+                    class="text-blue-400 hover:text-blue-300 text-sm font-medium">
+                    View Logs
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="px-4 py-3 border-t border-gray-700 flex justify-between items-center bg-gray-900/50" *ngIf="historyTotalPages > 1">
+          <button 
+            [disabled]="historyPage === 1"
+            (click)="changeHistoryPage(historyPage - 1)"
+            class="px-3 py-1 border border-gray-600 rounded text-sm disabled:opacity-50">
+            Previous
+          </button>
+          <span class="text-sm text-gray-400">Page {{ historyPage }} of {{ historyTotalPages }}</span>
+          <button 
+            [disabled]="historyPage === historyTotalPages"
+            (click)="changeHistoryPage(historyPage + 1)"
+            class="px-3 py-1 border border-gray-600 rounded text-sm disabled:opacity-50">
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Logs Tab -->
+  <div *ngIf="activeTab === 'audit'">
+    <div class="mb-4 flex items-center justify-between">
+      <h3 class="text-lg font-medium">Audit Logs for Batch: <span class="font-mono text-gray-400 text-sm">{{ selectedBatchId }}</span></h3>
+      <button (click)="setTab('history')" class="text-sm text-blue-400 hover:text-blue-300">&larr; Back to History</button>
+    </div>
+
+    <div *ngIf="isLoadingAudit" class="flex justify-center py-12">
+      <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <div *ngIf="!isLoadingAudit">
+      <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
+        <table class="min-w-full text-sm text-left text-gray-300">
+          <thead class="text-xs text-gray-400 uppercase bg-gray-900/50 border-b border-gray-700">
+            <tr>
+              <th class="px-4 py-3">Time</th>
+              <th class="px-4 py-3">Booking ID</th>
+              <th class="px-4 py-3">User</th>
+              <th class="px-4 py-3 text-right">Amount</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="auditLogs.length === 0">
+              <td colspan="6" class="px-4 py-8 text-center text-gray-500">No logs found for this batch.</td>
+            </tr>
+            <tr *ngFor="let log of auditLogs" class="border-b border-gray-700 hover:bg-gray-750">
+              <td class="px-4 py-3 text-xs text-gray-400">{{ log.updatedAt | date:'medium' }}</td>
+              <td class="px-4 py-3 font-mono text-xs">{{ log.bookingId }}</td>
+              <td class="px-4 py-3 text-xs">{{ log.userId }}</td>
+              <td class="px-4 py-3 text-right">{{ log.amount | currency:'INR' }}</td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 rounded text-xs font-medium" [ngClass]="getStatusBadgeClass(log.status)">
+                  {{ log.status | titlecase }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-xs text-gray-400 max-w-xs truncate" [title]="log.errorMessage || 'Processed successfully'">
+                {{ log.errorMessage || log.transactionId || '-' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Confirmation Modal -->
+<div *ngIf="showConfirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+  <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md overflow-hidden">
+    <div class="p-6">
+      <div class="flex items-center justify-center w-12 h-12 mx-auto bg-blue-900/30 rounded-full mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-center text-white mb-2">Confirm Refund Execution</h3>
+      <p class="text-center text-gray-400 text-sm mb-6">
+        You are about to process refunds for 
+        <strong class="text-white">{{ selectedEvent?.title }}</strong>.
+        <br>
+        <span *ngIf="confirmActionType === 'one_click'">Total Amount: {{ getTotalRefundAmount | currency:'INR' }}</span>
+        <span *ngIf="confirmActionType === 'excel'">Total Amount: {{ validationResult?.totalAmount | currency:'INR' }}</span>
+      </p>
+      
+      <div class="bg-gray-900 rounded p-4 text-xs text-gray-400 mb-6">
+        This action will transfer funds to users' wallets. This cannot be easily undone.
+      </div>
+
+      <div class="flex gap-3">
+        <button 
+          (click)="closeConfirmModal()"
+          class="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
+          Cancel
+        </button>
+        <button 
+          (click)="executeRefund()"
+          class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg shadow-blue-500/30 transition-colors">
+          Confirm & Process
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
