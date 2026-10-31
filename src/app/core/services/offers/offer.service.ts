@@ -18,6 +18,12 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
+export interface OfferOrganizer {
+  _id?: string;
+  name: string;
+  phone?: string;
+}
+
 export interface Offer {
   _id?: string;
   title: string;
@@ -28,6 +34,7 @@ export interface Offer {
   startDate: Date;
   endDate: Date;
   postedBy: string | null;
+  organizer?: OfferOrganizer;
   status: 'pending' | 'active' | 'inactive';
   likedBy?: string[];
   description?: string;
