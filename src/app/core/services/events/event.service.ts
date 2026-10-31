@@ -43,6 +43,12 @@ export interface EventTicket {
   ticketDate: Date | null,
 }
 
+export interface EventOrganizer {
+  _id?: string;
+  name: string;
+  phone?: string;
+}
+
 export interface EventItem {
   _id?: string; // Optional because it might not be available when creating a new event
   title: string;
@@ -71,6 +77,7 @@ export interface EventItem {
   description: string;
   price: string;
   postedBy: string;
+  organizer?: EventOrganizer;
   postingDate: string;
   language: string[];
   status: string;
